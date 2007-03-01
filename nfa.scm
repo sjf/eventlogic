@@ -1,9 +1,21 @@
-(module nfa
-   (include "nfa.sch")
-   (include "dfa.sch")
-   (import (dfa "dfa.scm") 
-           (utils "utils.scm"))
-   (main main))
+(module 
+ nfa
+ (include "nfa.sch")
+ (include "dfa.sch")
+ (import (dfa "dfa.scm") 
+	 (utils "utils.scm"))
+ ;(main main-nfa)
+ (export
+  (print-nfa x out)
+  (make-transition-function-nfa l . cmp)
+  (nfa->dfa nfa)
+  test-nfa1
+  test-nfa2
+  test-nfa3))
+  
+  
+  
+	 
 
 
 
@@ -17,7 +29,7 @@
      (nfa-states x)
      (nfa-start-state x))
   (map (lambda (t) (fprintf out "         ~a~%" t)) (nfa-transition-list x))
-  (fprintf out "#final-states: ~a~%"
+  (fprintf out "     final-states: ~a~%"
      (nfa-final-states x)))
 
 
@@ -204,7 +216,7 @@
 			(list 'q9 'b       (list 'q10)))
 		  (list 'q10)))
 
-(define (main argv)
+(define (main-nfa argv)
 (if #t
     (begin
 ;(print "bleh")

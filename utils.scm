@@ -4,18 +4,19 @@
     (first l)
     (second l)
     (third l)
-;;     (compose f1 f2)
-     (reduce f i l)
-     (find-if p l)
+    (compose f1 f2)
+    (reduce f i l)
+    (find-if p l)
 ;;     (list-remove l item)
-     (list-remove-all l item)
-     (find-if-all p l)
-     (list-less l1 l2)
+    (list-remove-all l item)
+    (find-if-all p l)
+    (list-less l1 l2)
 ;;     (power-set l)
 ;;     (cross-product l1 l2)
 ;;     (union a b)
 ;;     (sort-strings l)))
-     (nub l)
+    (nub l)
+    (string-join l s)
 ))
 (define (identity x) x)
 
@@ -171,3 +172,20 @@
 	   (loop (cdr b) n))
 	  (else
 	   (loop (cdr b) (cons (car b) n))))))
+
+; join elements in a list of strings using s as a delimter
+(define (string-join l s)
+  (if (null? l) 
+      ""
+      (let loop ((str (car l))
+		 (l (cdr l)))
+	(cond ((null? l) str)
+	      (else (loop (string-append 
+			   (string-append str s)
+			   (car l))
+			  (cdr l)))))))
+	   
+		
+	 
+	   
+	

@@ -5,7 +5,10 @@
   (export
     (print-dfa x out)
     (run-dfa x input)
-    (make-transition-function l . cmp)))
+    (make-transition-function l . cmp)
+    test-dfa
+    test-dfa1))
+    
 
 (define (print-dfa x out)
   (fprintf  out "dfa 
