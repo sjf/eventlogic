@@ -241,5 +241,6 @@
 ;; He wants you to stay
 ;; Will miss you a lot..
 ;; Is quite sad that you're leaving
-;; Love you too
+;; Love you too 
 (define (love) #t) 
+
