@@ -55,15 +55,15 @@
 	  (list 'star sym))
 	 ((sym) 
 	  sym))
-   (sym ((OPEN_SQBRACKET situationlist CLOSE_SQBRACKET) 
-	 situationlist)
+   (sym ((OPEN_SQBRACKET snapshot CLOSE_SQBRACKET) 
+	 snapshot)
 ;; 	((OPEN_SQBRACKET CLOSE_SQBRACKET)  
 ;; 	 (list))
         ((OPENPARAN regex CLOSEPARAN)
 	 regex))
-   (situationlist   
-    ((CHARS situationlist) 
-     (cons CHARS situationlist))
+   (snapshot
+    ((CHARS snapshot) 
+     (cons CHARS snapshot))
     (()
      (list)))))
   
