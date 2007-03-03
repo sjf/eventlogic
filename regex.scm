@@ -5,6 +5,7 @@
  (import (dfa "dfa.scm")
 	 (nfa "nfa.scm")
 	 (utils "utils.scm"))
+ (export (regex->dfa str))
  (main main-regex))
 
 (define regex-lexer
@@ -156,21 +157,21 @@
 	      (list qfinal))))
 
 (define (nfa-plus nfa)
-  ;; build an nfa which accepts L+ were L are the strings accepted by 
+  ;; builds an nfa which accepts L+ where L are the strings accepted by 
   ;; the nfa
   (nfa-concat nfa (nfa-star nfa)))
 
 
-(define (parse-tree->dfa tree)
-  (let ((nfa (parse-tree->nfa tree)))
-    (nfa->dfa nfa)))
-      
 ;; returns an nfa
 (define (regex->nfa str)
   (parse-tree->nfa 
    (read/lalrp regex-grammar
 	       regex-lexer
 	       (open-input-string str))))
+
+(define (regex->dfa str)
+  (nfa->dfa
+   (regex->nfa str)))
 
 (define (main-regex argv)
   (let ((r #f))
