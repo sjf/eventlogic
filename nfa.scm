@@ -6,20 +6,16 @@
 	 (utils "utils.scm"))
  ;(main main-nfa)
  (export
-  (print-nfa x out)
+  (print-nfa x)
   (make-transition-function-nfa l . cmp)
   (nfa->dfa nfa)
   test-nfa1
   test-nfa2
   test-nfa3))
   
-  
-  
-	 
 
-
-
-(define (print-nfa x out)
+(define (print-nfa x)
+(let ((out (current-output-port)))
   (fprintf  out "nfa 
      alphabet: ~a
      states: ~a
@@ -30,7 +26,7 @@
      (nfa-start-state x))
   (map (lambda (t) (fprintf out "         ~a~%" t)) (nfa-transition-list x))
   (fprintf out "     final-states: ~a~%"
-     (nfa-final-states x)))
+     (nfa-final-states x))))
 
 
 
@@ -221,9 +217,9 @@
     (begin
 ;(print "bleh")
 ;(print-nfa test-nfa3 (current-output-port))
-(print-dfa (nfa->dfa test-nfa1) (current-output-port))
-(print-dfa (nfa->dfa test-nfa2) (current-output-port))
-(print-dfa (nfa->dfa test-nfa3) (current-output-port))
+(print-dfa (nfa->dfa test-nfa1))
+(print-dfa (nfa->dfa test-nfa2))
+(print-dfa (nfa->dfa test-nfa3))
 
 ;(print ((nfa-transition test-nfa) 'q0 'epsilon))
 

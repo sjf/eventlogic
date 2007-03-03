@@ -3,21 +3,21 @@
   (import (utils "utils.scm"))
   ;(main main)
   (export
-    (print-dfa x out)
+    (print-dfa x)
     (run-dfa x input)
     (make-transition-function l . cmp)
     test-dfa
     test-dfa1))
     
-
-(define (print-dfa x out)
-  (fprintf  out "dfa 
+(define (print-dfa x)
+  (let ((out (current-output-port)))
+    (fprintf out "dfa 
      start: ~a
      transitions:~%"
-     (dfa-start-state x))
-  (map (lambda (t) (fprintf out "         ~a~%" t)) (dfa-transition-list x))
-  (fprintf out "    final-states: ~a~%"
-     (dfa-final-states x)))
+	     (dfa-start-state x))
+    (map (lambda (t) (fprintf out "         ~a~%" t)) (dfa-transition-list x))
+    (fprintf out "    final-states: ~a~%"
+	     (dfa-final-states x))))
 
 ;; run a finite state machine on a certain input
 ;; returns two element list: #t of #f if the machine accepted or not
@@ -95,7 +95,7 @@
 ; some tests
 (if #t
 (begin
-(print-dfa test-dfa (current-output-port))
+(print-dfa test-dfa)
 (print "should accept")
 (print (run-dfa test-dfa '( a b c d e)))
 (print "should reject")
