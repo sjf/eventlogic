@@ -2,14 +2,14 @@
   (include "dfa.sch")
   (import (utils "utils.scm")
 	  (graph "graph.scm"))
-  ;(main main)
+  (main main)
   (export
     (print-dfa x)
     (run-dfa x input)
     (make-transition-function l . cmp)
     (inverse dfaA)
     (complete dfaA)
-    (intersection dfaA dfaB)
+    (dfa-intersection dfaA dfaB)
     test-dfa
     test-dfa1))
     
@@ -125,18 +125,84 @@
 	       new-final
 	       (dfa-alphabet cdfa))))))
 
-(define (intersection dfaA dfaB)
-  #f)
-      
+;; Returns a dfa that is the intersection of dfaA and dfaB
+(define (dfa-intersection dfaA dfaB)
+  (let* ((alphabet (union (dfa-alphabet dfaA)
+			  (dfa-alphabet dfaB)))
+	 (new-start (list (dfa-start-state dfaA)
+			  (dfa-start-state dfaB))))
+    (let loop ((new-states (list new-start))
+	       (new-trans (list))
+	       (states-to-search (list new-start)))
+      (if (not (null? states-to-search))
+	  (let* ((state (car states-to-search))
+		 (curr-transitions (%intersecting-transitions 
+				    dfaA dfaB 
+				    (first state)
+				    (second state)
+				    alphabet))
+		 (next-states (nub (map third curr-transitions))))
+	    (loop (union next-states new-states)
+		  (append new-trans curr-transitions)
+		  (append (cdr states-to-search) (list-less next-states new-states))))
+	  (dfa new-start
+	       (make-transition-function new-trans)
+	       new-trans
+	       (intersection 
+		(cross-product (dfa-final-states dfaA)
+			       (dfa-final-states dfaB))
+		new-states)
+	       alphabet)))))
+  
+;; return a set of merged transtions for dfaA and dfaB
+;; from stateA and stateB over all the symbols in alphabet
+(define (%intersecting-transitions dfaA dfaB stateA stateB alphabet)
+  (let loop ((symbols alphabet)
+	     (new-states (list))
+	     (new-transitions (list)))
+    (cond ((not (null? symbols))
+	   (let* ((sym (car symbols))
+		  (a-next ((dfa-transition dfaA)
+			   stateA
+			   sym))
+		  (b-next ((dfa-transition dfaB)
+			   stateB
+			   sym)))
+	     (if (not (or (eq? a-next #f) (eq? b-next #f)))
+		 (let* ((state (list stateA stateB))
+			(next-state (list a-next b-next))
+			(new-trans (list state sym next-state)))
+		   (loop (cdr symbols) 
+			 (cons next-state new-states)
+			 (cons new-trans new-transitions)))
+		 (loop (cdr symbols)
+		       new-states
+		       new-transitions))))
+	  (else 
+	   new-transitions))))
+		    
+  
 (define test-dfa 
   (dfa
    'q0
    (make-transition-function (list (list 'q0 'a 'q1)
 				   (list 'q1 'b 'q0)
 				   (list 'q0 'c 'q2)))
-   (list (list 'q0 '(a) 'q1)
-	 (list 'q1 '(b) 'q0)
-	 (list 'q0 '(c) 'q2))
+   (list (list 'q0 'a 'q1)
+	 (list 'q1 'b 'q0)
+	 (list 'q0 'c 'q2))
+   (list 'q2)
+   '(a b c)))
+ 
+(define test-dfaA
+  (dfa
+   'q0
+   (make-transition-function (list (list 'q0 'a 'q1)
+				   (list 'q1 'b 'q0)
+				   (list 'q0 'b 'q2)))
+   (list (list 'q0 'a 'q1)
+	 (list 'q1 'b 'q0)
+	 (list 'q0 'b 'q2))
    (list 'q2)
    '(a b c)))
 
@@ -154,8 +220,6 @@
 
 (define (main argv)
 ; some tests
-(if #t
-(begin
 (print-dfa test-dfa)
 (print "should accept")
 (print (run-dfa test-dfa '( a b c d e)))
@@ -164,6 +228,10 @@
 (print-dfa (complete test-dfa))
 (print-dfa (inverse test-dfa))
 (print-dfa (complete test-dfa1))
-(print-dfa (inverse test-dfa1)))))
-
+(print-dfa (inverse test-dfa1))
+;(show-graph (graph test-dfa))
+(print-dfa (dfa-intersection (complete test-dfa) (complete test-dfaA)))
+(print-dfa (dfa-intersection test-dfa test-dfaA))
+;(show-graph (graph (dfa-intersection test-dfa test-dfa))))
+)
 ;;

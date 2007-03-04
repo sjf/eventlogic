@@ -11,11 +11,12 @@
     (list-remove-all l item)
     (find-if-all p l)
     (list-less l1 l2)
+    (nub l)
 ;;     (power-set l)
     (cross-product l1 l2)
     (union a b)
+    (intersection a b)
 ;;     (sort-strings l)))
-    (nub l)
     (string-join l s)
     (temp-filename)
 ))
@@ -28,8 +29,6 @@
    (cadr l))
  (define (third l)
    (caddr l))
-
-
 
 (define (compose f1 f2)
   (lambda (x)
@@ -79,8 +78,6 @@
 	 (cons (car l) (find-if-all p (cdr l))))
 	(else 
 	 (find-if-all p (cdr l)))))
-      
-      
 		    
 ;; Remove the items in l2 from l1
 (define (list-less l1 l2)
@@ -89,6 +86,16 @@
       (let ((a (car l2))
 	    (b (cdr l2)))
 	(list-less (list-remove l1 a) b))))
+
+;; remove the duplicates from l, returns a new list
+(define (nub l)
+  (let loop ((b l)	
+	     (n (list)))
+    (cond ((null? b) n)
+	  ((member (car b) n)
+	   (loop (cdr b) n))
+	  (else
+	   (loop (cdr b) (cons (car b) n))))))
 
 ;; Return the power set of l, eg. all the subsets of l
 (define (power-set l)
@@ -139,6 +146,19 @@
 	 (union (cdr a) b))
 	(else 
 	 (cons (car a) (union (cdr a) b)))))
+
+(define (intersection a b)
+  (let loop ((intersec (list))
+	     (a a)
+	     (b b))
+    (if (not (null? a))
+	(if (member (car a) b)
+	    (loop (cons (car a) intersec)
+		  (cdr a)
+		  b)
+	    (loop intersec (cdr a) b))
+	intersec)))
+		   
       
 ;; removes the runtime arguments to chicken and the program name, argv[0]
 ;; chicken arguments begin with -:
@@ -164,16 +184,6 @@
 ;;example:
 ;;(for-each (x '(1 2 3)) (display x) (display ","))
 
-;; remove the duplicates from l, returns a new list
-(define (nub l)
-  (let loop ((b l)	
-	     (n (list)))
-    (cond ((null? b) n)
-	  ((member (car b) n)
-	   (loop (cdr b) n))
-	  (else
-	   (loop (cdr b) (cons (car b) n))))))
-
 ; join elements in a list of strings using s as a delimter
 (define (string-join l s)
   (if (null? l) 
@@ -191,7 +201,3 @@
 	  (file-separator)
 	  "tmp" 
 	  (random 65535)))
-		
-	 
-	   
-	

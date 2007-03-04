@@ -1,8 +1,8 @@
 OPTIONS = -g4
 nfa: dfa.o utils.o nfa.scm
 	bigloo $(OPTIONS)  nfa.scm dfa.o utils.o -o nfa
-dfa: utils.o dfa.scm
-	bigloo $(OPTIONS) dfa.scm utils.o -o dfa
+dfa: graph.o utils.o nfa.o dfa.scm
+	bigloo $(OPTIONS) dfa.scm graph.o utils.o nfa.o -o dfa
 graph: dfa.o utils.o nfa.o graph.scm
 	bigloo $(OPTIONS) graph.scm utils.o dfa.o nfa.o -o graph 
 regex: regex.scm dfa.o nfa.o utils.o 
@@ -19,6 +19,8 @@ utils.o: utils.scm
 	bigloo $(OPTIONS) -c utils.scm
 snapshots.o: snapshots.scm
 	bigloo $(OPTIONS) -c snapshots.scm
+graph.o: graph.scm
+	bigloo $(OPTIONS) -c graph.scm
 regex.o: regex.scm
 	bigloo $(OPTIONS) -c regex.scm 
 clean:

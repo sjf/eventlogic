@@ -5,7 +5,7 @@
 (module graph
 	(include "nfa.sch")
 	(include "dfa.sch")
-	(main main-graph)
+	;(main main-graph)
 	(import 
 	 (nfa "nfa.scm")
 	 (dfa "dfa.scm")
@@ -110,8 +110,9 @@
   ;(show-graph (graph (inverse test-dfa1)))
   (print-nfa test-nfa3)
   (print-dfa (nfa->dfa test-nfa3))
-  (show-graph (graph (complete (nfa->dfa test-nfa3))))
-  (show-graph (graph test-nfa3)))
+  ;(show-graph (graph (complete (nfa->dfa test-nfa3))))
+  ;(show-graph (graph test-nfa3)))
+)
 
 
 
