@@ -5,8 +5,14 @@
  (import (dfa "dfa.scm")
 	 (nfa "nfa.scm")
 	 (utils "utils.scm"))
- (export (regex->dfa str))
- (main main-regex))
+; (main main-regex)
+ (export (nfa-plus nfa)
+	 (nfa-concat nfaa nfab)
+	 (nfa-for-one-symbol sym)
+	 (regex->dfa str)
+	 (regex->nfa str)
+	 (str->parse-tree str)
+	 (parse-tree->nfa tree)))
 
 (define regex-lexer
   (regular-grammar ()
@@ -98,25 +104,25 @@
      trans
      (list endB))))
 
-(define (nfa-star nfa)
+(define (nfa-star nfaA)
   ;; build an nfa which accepts L*
   ;; where L are strings accepted by the nfa
   (let* ((q0     (gensym "q"))
 	 (qfinal (gensym "q"))
-	 (startA (nfa-start-state nfa))
+	 (startA (nfa-start-state nfaA))
 	 ;; this only works for nfa which 
 	 ;; only have one final state,
 	 ;; which includes all the ones 
 	 ;; produced from a regex
-	 (endA   (car (nfa-final-states nfa)))
+	 (endA   (car (nfa-final-states nfaA)))
 	 (trans (append (list (list q0 'epsilon qfinal)
 			      (list q0 'epsilon startA)
 			      (list endA 'epsilon startA)
 			      (list endA 'epsilon qfinal))
-			(nfa-transition-list nfa))))
+			(nfa-transition-list nfaA))))
     (nfa
-     (nfa-alphabet nfa)
-     (cons q0 (cons qfinal (nfa-states nfa)))
+     (nfa-alphabet nfaA)
+     (cons q0 (cons qfinal (nfa-states nfaA)))
      q0
      (make-transition-function-nfa trans)
      trans
@@ -161,14 +167,17 @@
   ;; the nfa
   (nfa-concat nfa (nfa-star nfa)))
 
+(define (str->parse-tree str)
+  (read/lalrp regex-grammar
+	      regex-lexer
+	      (open-input-string str)))  
 
 ;; returns an nfa
 (define (regex->nfa str)
   (parse-tree->nfa 
-   (read/lalrp regex-grammar
-	       regex-lexer
-	       (open-input-string str))))
+   (str->parse-tree str)))
 
+;; returns a dfa
 (define (regex->dfa str)
   (nfa->dfa
    (regex->nfa str)))

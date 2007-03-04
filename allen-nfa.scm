@@ -8,7 +8,7 @@
 	 (nfa "nfa.scm")
 	 (utils "utils.scm")
 	 (regex "regex.scm")
-	 (situation "situation.scm"))
+	 (snapshots "snapshots.scm"))
  (main main-allen))
  
 
@@ -100,9 +100,9 @@
   (loop))
 
 (exit)
-(let* ((e1 (regex->nfa (car (get-args))))
-       (e2 (regex->nfa (cadr (get-args))))
-       (str (str->snapshot-seq (caddr (get-args)))))
+(let* ((e1 (regex->nfa (car argv)))
+       (e2 (regex->nfa (cadr argv)))
+       (str (str->snapshot-seq (caddr argv))))
   (map (lambda (f) (print f " " (f e1 e2 str)))
        (list overlaps)))
        ;(list equal before after meets met-by overlaps overlapped-by contains

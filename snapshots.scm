@@ -5,7 +5,11 @@
  (import (dfa "dfa.scm")
 	 (nfa "nfa.scm")
 	 (utils "utils.scm"))
- (main main-snapshots))
+; (main main-snapshots)
+ (export (str->snapshot-seq str)
+	 empty-snapshot
+	 (superposition a b)))
+
 
 (define snapshot-lexer
   (regular-grammar ()
@@ -77,6 +81,7 @@
 
 ;; the empty snapshot: []
 (define empty-snapshot (list))
+
 (define (main-snapshots argv)
   (if (> (length argv) 1)
       (begin

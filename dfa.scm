@@ -1,11 +1,13 @@
 (module dfa
   (include "dfa.sch")
   (import (utils "utils.scm"))
-  ;(main main)
+  (main main)
   (export
     (print-dfa x)
     (run-dfa x input)
     (make-transition-function l . cmp)
+    (inverse dfa)
+    (complete dfa)
     test-dfa
     test-dfa1))
     
@@ -69,6 +71,60 @@
 	  #f
 	  (third trans))))))
 
+
+(define (complete dfaA)
+  (define transitions (dfa-transition-list dfaA))
+  (define sink-state (gensym "sink"))
+  (let loop0 ((states (nub (append 
+			    (map first (dfa-transition-list dfaA))
+			    (map third (dfa-transition-list dfaA))))))
+;    (print states)
+    (cond ((not (null? states))
+	   (let loop1 ((alphabet (dfa-alphabet dfaA)))
+	     ;(print alphabet)
+	     (cond ((not (null? alphabet))
+		   ; (print (car states) " " (car alphabet) "  "
+			;   ((dfa-transition dfaA) (car states) (car alphabet)))
+		    (if (equal? ((dfa-transition dfaA) (car states) (car alphabet)) #f)
+			; there is no transition for this state and symbol
+			; add a transition to the sink state
+			(set! transitions
+			      (cons (list (car states)
+					  (car alphabet)
+					  sink-state)
+				    transitions)))
+		    (loop1 (cdr alphabet)))))
+	   (loop0 (cdr states)))
+	  (else
+	   (dfa (dfa-start-state dfaA)
+		(make-transition-function transitions)
+		transitions
+		(dfa-final-states dfaA)
+		(dfa-alphabet dfaA))))))
+	
+
+(define (inverse dfaA)
+  (let* ((cdfa (complete dfaA))
+	 (states (nub (append
+		       (map first (dfa-transition-list cdfa))
+		       (map third (dfa-transition-list cdfa))))))
+    ; swap final and non final states
+    (let loop ((states states)
+	       (new-final (list)))
+      (if (not (null? states))
+	  (if (not (member (car states)
+			   (dfa-final-states cdfa)))
+	      (loop (cdr states) (cons (car states) new-final))
+	      (loop (cdr states) new-final))
+	  ; build a new dfa and return it
+	  (dfa (dfa-start-state cdfa)
+	       (dfa-transition cdfa)
+	       (dfa-transition-list cdfa)
+	       new-final
+	       (dfa-alphabet cdfa))))))
+      
+	
+
 (define test-dfa 
   (dfa
    'q0
@@ -78,18 +134,20 @@
    (list (list 'q0 '(a) 'q1)
 	 (list 'q1 '(b) 'q0)
 	 (list 'q0 '(c) 'q2))
-   (list 'q2)))
+   (list 'q2)
+   '(a b c)))
 
 (define test-dfa1 
   (dfa
    'qA
-   (make-transition-function (list (list 'q0 'a 'q1)
-				   (list 'q1 'b 'q0)
-				   (list 'q0 'c 'q2)))
+   (make-transition-function (list (list 'qA '(d) 'qB)
+				   (list 'qB '(e) 'qA)
+				   (list 'qA '(f) 'qB)))
    (list (list 'qA '(d) 'qB)
 	 (list 'qB '(e) 'qA)
 	 (list 'qA '(f) 'qB))
-   (list 'qB)))
+   (list 'qB)
+   '((d) (e) (f))))
 
 (define (main argv)
 ; some tests
@@ -99,5 +157,10 @@
 (print "should accept")
 (print (run-dfa test-dfa '( a b c d e)))
 (print "should reject")
-(print (run-dfa test-dfa '( a b d e))))))
+(print (run-dfa test-dfa '( a b d e)))
+(print-dfa (complete test-dfa))
+(print-dfa (inverse test-dfa))
+(print-dfa (complete test-dfa1))
+(print-dfa (inverse test-dfa1)))))
+
 ;;
