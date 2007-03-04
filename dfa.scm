@@ -1,13 +1,15 @@
 (module dfa
   (include "dfa.sch")
-  (import (utils "utils.scm"))
-  (main main)
+  (import (utils "utils.scm")
+	  (graph "graph.scm"))
+  ;(main main)
   (export
     (print-dfa x)
     (run-dfa x input)
     (make-transition-function l . cmp)
-    (inverse dfa)
-    (complete dfa)
+    (inverse dfaA)
+    (complete dfaA)
+    (intersection dfaA dfaB)
     test-dfa
     test-dfa1))
     
@@ -122,9 +124,10 @@
 	       (dfa-transition-list cdfa)
 	       new-final
 	       (dfa-alphabet cdfa))))))
-      
-	
 
+(define (intersection dfaA dfaB)
+  #f)
+      
 (define test-dfa 
   (dfa
    'q0

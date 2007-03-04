@@ -17,6 +17,7 @@
 ;;     (sort-strings l)))
     (nub l)
     (string-join l s)
+    (temp-filename)
 ))
 (define (identity x) x)
 
@@ -184,7 +185,12 @@
 			   (string-append str s)
 			   (car l))
 			  (cdr l)))))))
-	   
+(define (temp-filename)
+  (format "~a~a~a~s" 
+	  (os-tmp) 
+	  (file-separator)
+	  "tmp" 
+	  (random 65535)))
 		
 	 
 	   

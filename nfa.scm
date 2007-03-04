@@ -86,7 +86,7 @@
 		  (make-transition-function (first dfa-transitions-and-states))
 		  dfa-transitions
 		  dfa-final-states
-		  (nfa-alphabet nfa))))
+		  (remq 'epsilon (nfa-alphabet nfa)))))
 	dfa))
     
 (define (nfa->dfa-final-states nfa-final-states dfa-states)
