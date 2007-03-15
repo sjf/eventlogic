@@ -65,8 +65,6 @@
 	  sym))
    (sym ((OPEN_SQBRACKET snapshot CLOSE_SQBRACKET) 
 	 snapshot)
-;; 	((OPEN_SQBRACKET CLOSE_SQBRACKET)  
-;; 	 (list))
         ((OPENPARAN regex CLOSEPARAN)
 	 regex))
    (snapshot
@@ -103,7 +101,6 @@
       (union (nfa-alphabet nfaA) (nfa-alphabet nfaB))
       (append (nfa-states nfaA) (nfa-states nfaB))
       startA
-      (make-transition-function-nfa trans)
       trans
       (list endB)))))
 
@@ -128,7 +125,6 @@
       (nfa-alphabet nfaA)
       (append (list q0 qfinal) (nfa-states nfaA))
       q0
-      (make-transition-function-nfa trans)
       trans
       (list qfinal)))))
 
@@ -151,19 +147,17 @@
      (nfa (union  (nfa-alphabet nfaA) (nfa-alphabet nfaB))
 	  (append (nfa-states nfaA) (nfa-states nfaB) (list q0 qfinal))
 	  q0
-	  (make-transition-function-nfa trans)
 	  trans
 	  (list qfinal)))))
 
 (define (nfa-for-one-symbol sym)
   ;; build an nfa which accepts one symbol
-  (let* ((q0     (gensym "q"))
+  (let* ((q0 (gensym "q"))
 	(qfinal (gensym "q"))
 	(trans  (list (list q0 sym qfinal))))
     (nfa (list sym)
 	      (list q0 qfinal)
 	      q0
-	      (make-transition-function-nfa trans)
 	      trans
 	      (list qfinal))))
 

@@ -163,7 +163,8 @@
 	(print-dfa dfa4)
 	;(show-graph (graph dfa1))
 	;(show-graph (graph dfa3))
-	(show-graph (graph dfa4))
+	;(show-graph (graph dfa4))
+	(print (run-dfa dfa4 str))
 	dfa4)))
 
 ;;     (run-relations nfa1 nfa2 str

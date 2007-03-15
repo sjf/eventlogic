@@ -7,7 +7,6 @@
  ;(main main-nfa)
  (export
   (print-nfa x)
-  (make-transition-function-nfa l . cmp)
   (nfa->dfa nfa)
   (nfa-rename-states nfa1)
   (nfa-trans nfa state sym)
@@ -40,63 +39,6 @@
   (fprintf out "     final-states: ~a~%"
      (nfa-final-states x))))
 
-
-
-;; The nfa version differs from the dfa transition function
-;; in that it will return a list
-;; of next states instead of just one state		
-
-;; transitions should be a list where each element is of the form
-;; (current-state input-symbol next-state)
-;; There may be more than one 
-
-;; cmp is an optional function that will be used to compare the input
-;; symbols for equality
-(define (make-transition-function-nfa transitions . cmp)
-  (let ((cmp (if (null? cmp)
-		 equal?
-		 cmp)))
-  (lambda (curr-state symbol)
-    (let ((trans (find-if-all (lambda (t)
-				(and (equal? (first t) curr-state)
-				     (cmp (second t) symbol)))
-			      transitions)))
-      (if (eq? trans (list))
-	  #f
-	  (map caddr trans)))))) ;; return only the next states
-
-;; Generate new symbols for the states in a dfa
-;; This is used after converting an nfa to dfa
-;; to get rid of the long compound state identifiers
-;; and give them more human friendly names.
-;; Or if you are doing an operation on a dfa
-;; which produces a new dfa, it needs to have
-;; different state names to old one.
-(define (dfa-rename-states dfa1)
-  (let* ((mapping (make-hashtable))
-	 (old-states (dfa-states dfa1)))
-    ;; generate new symbols for each state
-    (map (lambda (state)
-	   (hashtable-put! mapping (to-string state) (gensym "q")))
-	 old-states)
-    (let ((new-trans
-	   (map (lambda (trans)
-		  (list 
-		   (hashtable-get mapping (to-string (first trans)))
-		   (second trans)
-		   (hashtable-get mapping (to-string (third trans)))))
-		(dfa-transition-list dfa1)))
-	  (new-start (hashtable-get mapping (to-string (dfa-start-state dfa1))))
-	  (new-final (map (lambda (state)
-			    (hashtable-get mapping (to-string state)))
-			  (dfa-final-states dfa1))))
-      (dfa 
-       new-start
-       (make-transition-function new-trans)
-       new-trans
-       new-final
-       (dfa-alphabet dfa1)))))	 
-
 ;; Acts the same as dfa-rename-states
 (define (nfa-rename-states nfa1)
   (let* ((mapping (make-hashtable))
@@ -120,7 +62,6 @@
        (nfa-alphabet nfa1)
        (hashtable->list mapping) ;; list of new states
        new-start
-       (make-transition-function-nfa new-trans)
        new-trans
        new-final))))
   
@@ -136,7 +77,6 @@
 			   (nfa-final-states nfa)
 			   dfa-states))
 	(dfa1 (dfa dfa-start-state
-		  (make-transition-function (first dfa-transitions-and-states))
 		  dfa-transitions
 		  dfa-final-states
 		  (remq 'epsilon (nfa-alphabet nfa)))) ;; the same alphabet minus epsilon
@@ -262,11 +202,6 @@
 		  (list 'a 'b 'epsilon)
 		  (list 'q0 'q1 'q2 'q3)
 		  'q0
-		  (make-transition-function (list (list 'q0 'a       (list 'q1))
-						  (list 'q0 'epsilon (list 'q2 'q3))
-						  (list 'q1 'b       (list 'q3))
-						  (list 'q2 'epsilon (list 'q3))
-						  (list 'q3 'epsilon (list 'q3 'q4))))
 		  (list (list 'q0 'a       (list 'q1))
 			(list 'q0 'epsilon (list 'q2 'q3))
 			(list 'q1 'b       (list 'q3))
@@ -278,10 +213,6 @@
 		  (list 'a 'b 'c)
 		  (list 'q0 'q1 'q2 'q3)
 		  'q0
-		  (make-transition-function (list (list 'q0 'a       (list 'q1))
-						  (list 'q1 'b       (list 'q2))
-						  (list 'q1 'a       (list 'q1 'q2))
-						  (list 'q2 'c       (list 'q3))))
 		  (list (list 'q0 'a       (list 'q1))
 			(list 'q1 'b       (list 'q2))
 			(list 'q1 'a       (list 'q1 'q2))
@@ -294,16 +225,6 @@
 		  (list 'a 'b 'epsilon)
 		  (list 'q0 'q1 'q2 'q3 'q4 'q5 'q6 'q7 'q8 'q9 'q10)
 		  'q0
-		  (make-transition-function (list (list 'q0 'epsilon (list 'q1 'q7))
-						  (list 'q1 'epsilon (list 'q2 'q4))
-						  (list 'q2 'a       (list 'q3))
-						  (list 'q3 'epsilon (list 'q6))
-						  (list 'q4 'b       (list 'q5))
-						  (list 'q5 'epsilon (list 'q6))
-						  (list 'q6 'epsilon (list 'q7 'q1))
-						  (list 'q7 'a       (list 'q8))
-						  (list 'q8 'b       (list 'q9))
-						  (list 'q9 'b       (list 'q10))))
 		  (list (list 'q0 'epsilon (list 'q1 'q7))
 			(list 'q1 'epsilon (list 'q2 'q4))
 			(list 'q2 'a       (list 'q3))

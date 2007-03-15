@@ -6,11 +6,11 @@
   (export
     (print-dfa x)
     (run-dfa x input)
-    (make-transition-function l . cmp)
     (inverse dfaA)
     (complete dfaA)
     (dfa-intersection dfaA dfaB)
     (dfa-states dfa)
+    (dfa-rename-states dfa)
     test-dfa
     test-dfa1))
     
@@ -23,6 +23,21 @@
     (map (lambda (t) (fprintf out "         ~a~%" t)) (dfa-transition-list x))
     (fprintf out "    final-states: ~a~%"
 	     (dfa-final-states x))))
+
+;; Look for a list list (curr-state symbol _ ) in transitions
+;; the third element of this list will be the next state(s)
+;; if no matching combination of curr-state and symbol are found
+;; #f is returned
+(define (dfa-trans dfa curr-state symbol)
+  (let ((trans (find-if (lambda (t)
+			  (and (equal? (first t) curr-state)
+			       (equal? (second t) symbol)))
+			(dfa-transition-list dfa))))
+    (if (eq? trans #f)
+	#f
+	;; return the next state
+	(third trans))))
+  
 
 ;; run a finite state machine on a certain input
 ;; returns two element list: #t of #f if the machine accepted or not
@@ -38,7 +53,7 @@
 	 (list #f '()))   ;; end of input and not accepting
 	(else
 	 (let* ((symbol (car input))
-		(next-state ((dfa-transition dfa) curr-state symbol)))
+		(next-state (dfa-trans dfa curr-state symbol)))
 					;(print (list "next: " next-state))
 	   (cond
 	    ;; this happens if the machine reached the end of input
@@ -50,31 +65,10 @@
 	     (%run-dfa next-state dfa (cdr input))))))))
 
 
-
-;; transitions should be the transition table for a dfa or nfa,
-;; a list of three element lists containing:
-;; (current_state input_symbol next_state(s))
-;; Returns a function which looks at this table to get
-;; the next state. (For dfa next_state will be a symbol, for
-;; a nfa it will be a list of states).
-(define (make-transition-function transitions . cmp )
-  ;; Look for a list list (curr-state symbol _ ) in transitions
-  ;; the third element of this list will be the next state(s)
-  ;; if no matching combination of curr-state and symbol are found
-  ;; #f is returned
-  (let ((cmp (if (null? cmp)
-		 equal?
-		 cmp)))
-  (lambda (curr-state symbol)
-    (let ((trans (find-if (lambda (t)
-			    (and (equal? (first t) curr-state)
-				 (cmp (second t) symbol)))
-			  transitions)))
-      (if (eq? trans #f)
-	  #f
-	  (third trans))))))
-
-
+;; A complete dfa has transitions out of every state for every symbol
+;; in the language.
+;; This will add in the necessary extra transitions, which will go
+;; to a new sink state
 (define (complete dfaA)
   (define transitions (dfa-transition-list dfaA))
   (define sink-state (gensym "sink"))
@@ -88,7 +82,7 @@
 	     (cond ((not (null? alphabet))
 		   ; (print (car states) " " (car alphabet) "  "
 			;   ((dfa-transition dfaA) (car states) (car alphabet)))
-		    (if (equal? ((dfa-transition dfaA) (car states) (car alphabet)) #f)
+		    (if (equal? (dfa-trans dfaA (car states) (car alphabet)) #f)
 			; there is no transition for this state and symbol
 			; add a transition to the sink state
 			(set! transitions
@@ -99,11 +93,11 @@
 		    (loop1 (cdr alphabet)))))
 	   (loop0 (cdr states)))
 	  (else
-	   (dfa (dfa-start-state dfaA)
-		(make-transition-function transitions)
-		transitions
-		(dfa-final-states dfaA)
-		(dfa-alphabet dfaA))))))
+	   (dfa-rename-states 
+	    (dfa (dfa-start-state dfaA)
+		 transitions
+		 (dfa-final-states dfaA)
+		 (dfa-alphabet dfaA)))))))
 	
 
 (define (inverse dfaA)
@@ -120,11 +114,11 @@
 	      (loop (cdr states) (cons (car states) new-final))
 	      (loop (cdr states) new-final))
 	  ; build a new dfa and return it
-	  (dfa (dfa-start-state cdfa)
-	       (dfa-transition cdfa)
-	       (dfa-transition-list cdfa)
-	       new-final
-	       (dfa-alphabet cdfa))))))
+	  (dfa-rename-states
+	   (dfa (dfa-start-state cdfa)
+		(dfa-transition-list cdfa)
+		new-final
+		(dfa-alphabet cdfa)))))))
 
 ;; Returns a dfa that is the intersection of dfaA and dfaB
 (define (dfa-intersection dfaA dfaB)
@@ -146,14 +140,14 @@
 	    (loop (union next-states new-states)
 		  (append new-trans curr-transitions)
 		  (append (cdr states-to-search) (list-less next-states new-states))))
-	  (dfa new-start
-	       (make-transition-function new-trans)
-	       new-trans
-	       (intersection 
-		(cross-product (dfa-final-states dfaA)
-			       (dfa-final-states dfaB))
-		new-states)
-	       alphabet)))))
+	  (dfa-rename-states
+	   (dfa new-start
+		new-trans
+		(intersection 
+		 (cross-product (dfa-final-states dfaA)
+				(dfa-final-states dfaB))
+		 new-states)
+		alphabet))))))
   
 ;; return a set of merged transtions for dfaA and dfaB
 ;; from stateA and stateB over all the symbols in alphabet
@@ -163,12 +157,8 @@
 	     (new-transitions (list)))
     (cond ((not (null? symbols))
 	   (let* ((sym (car symbols))
-		  (a-next ((dfa-transition dfaA)
-			   stateA
-			   sym))
-		  (b-next ((dfa-transition dfaB)
-			   stateB
-			   sym)))
+		  (a-next (dfa-trans dfaA stateA sym))
+		  (b-next (dfa-trans dfaB stateB sym)))
 	     (if (not (or (eq? a-next #f) (eq? b-next #f)))
 		 (let* ((state (list stateA stateB))
 			(next-state (list a-next b-next))
@@ -189,14 +179,39 @@
 	       (dfa-final-states dfa1)
 	       (list (dfa-start-state dfa1)))))
 		
+
+
+;; Generate new symbols for the states in a dfa
+;; If you are constructing a dfa based on another
+;; it must have different states names.
+(define (dfa-rename-states dfa1)
+  (let* ((mapping (make-hashtable))
+	 (old-states (dfa-states dfa1)))
+    ;; generate new symbols for each state
+    (map (lambda (state)
+	   (hashtable-put! mapping (to-string state) (gensym "q")))
+	 old-states)
+    (let ((new-trans
+	   (map (lambda (trans)
+		  (list 
+		   (hashtable-get mapping (to-string (first trans)))
+		   (second trans)
+		   (hashtable-get mapping (to-string (third trans)))))
+		(dfa-transition-list dfa1)))
+	  (new-start (hashtable-get mapping (to-string (dfa-start-state dfa1))))
+	  (new-final (map (lambda (state)
+			    (hashtable-get mapping (to-string state)))
+			  (dfa-final-states dfa1))))
+      (dfa 
+       new-start
+       new-trans
+       new-final
+       (dfa-alphabet dfa1)))))	 
 		    
   
 (define test-dfa 
   (dfa
    'q0
-   (make-transition-function (list (list 'q0 'a 'q1)
-				   (list 'q1 'b 'q0)
-				   (list 'q0 'c 'q2)))
    (list (list 'q0 'a 'q1)
 	 (list 'q1 'b 'q0)
 	 (list 'q0 'c 'q2))
@@ -206,9 +221,6 @@
 (define test-dfaA
   (dfa
    'q0
-   (make-transition-function (list (list 'q0 'a 'q1)
-				   (list 'q1 'b 'q0)
-				   (list 'q0 'b 'q2)))
    (list (list 'q0 'a 'q1)
 	 (list 'q1 'b 'q0)
 	 (list 'q0 'b 'q2))
@@ -218,9 +230,6 @@
 (define test-dfa1 
   (dfa
    'qA
-   (make-transition-function (list (list 'qA '(d) 'qB)
-				   (list 'qB '(e) 'qA)
-				   (list 'qA '(f) 'qB)))
    (list (list 'qA '(d) 'qB)
 	 (list 'qB '(e) 'qA)
 	 (list 'qA '(f) 'qB))

@@ -78,7 +78,6 @@
 	 (alpha-new (union (dfa-alphabet dfa1) (dfa-alphabet dfa2))))
     (dfa
      start-state
-     (make-transition-function trans-new)
      trans-new
      final-states
      alpha-new)))
