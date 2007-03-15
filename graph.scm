@@ -29,10 +29,10 @@
     (lambda () (graph state-machine))))
 
 (define (graph-transition transition)
-  (format "\t\"~s\" -> \"~s\" [label=\"~s\"];\n" 
-	  (car transition)
-	  (caddr transition)
-	  (cadr transition)))
+  (format "\t\"~a\" -> \"~a\" [label=\"~a\"];\n" 
+	  (first transition)
+	  (third transition)
+	  (second transition)))
 
 (define dot-format 
 "digraph G {
@@ -45,13 +45,18 @@
     ~a
 }")
 
-(define (to-string x)
-  (format "\"~s\"" x))
+(define (string-quote x)
+  (format "\"~a\"" x))
 
 (define (graph-dfa dfa)
-  (let* ((final-states (string-join 
-			(map to-string (dfa-final-states dfa)) " "))
-	(pre-start 1)
+  (let* ((final-states (if (null? (dfa-final-states dfa))
+			   ;; this will not appear on the final graph
+			   ;; it is just here to make sure a correctly
+			   ;; formatted dot file is produced
+			   (gensym "dummy")
+			   (string-join 
+			    (map string-quote (dfa-final-states dfa)) " ")))
+	(pre-start (gensym "dummy"))
 	(transitions (map graph-transition
 			  (append (dfa-transition-list dfa)
 				  ;; add dummy transition to the starting state
@@ -60,6 +65,7 @@
 				    pre-start
 				    ""
 				    (dfa-start-state dfa)))))))
+    ;; fill parameters into string
     (format dot-format 
 	    pre-start
 	    final-states 
@@ -67,27 +73,23 @@
 
 
 (define (graph-nfa nfa)
-  (let ((final-states (string-join 
-		       (map to-string (nfa-final-states nfa)) " "))
-	(transitions (list)))
-    (let loop0 ((trans (nfa-transition-list nfa)))
-      (cond ((not (null? trans))
-	     (let loop1 ((edges (third (car trans))))
-	       (cond ((not (null? edges))
-		      (set! 
-		       transitions
-		       (cons (graph-transition
-			      (list (first (car trans))
-				    (second (car trans))
-				    (car edges)))
-			     transitions))
-		      (loop1 (cdr edges)))))
-	     (loop0 (cdr trans)))))
-    ;; add dummy transition to the starting state
-    (set! transitions (cons (graph-transition
-			     (list 1 "" (nfa-start-state nfa)))
-			    transitions))
-    (format dot-format 1 final-states (string-join transitions ""))))
+  (let* ((final-states (if (null? (nfa-final-states nfa))
+			   (gensym "dummy")
+			   (string-join 
+			    (map string-quote (nfa-final-states nfa)) " ")))
+	 (pre-start (gensym "dummy"))
+	 (trans-list
+	  (cons
+	   ;; dummy transition to the starting state
+	   (graph-transition
+	    (list pre-start "" (nfa-start-state nfa)))
+	   ;; make a graph edge each transition
+	   (map (lambda (trans)
+		  (graph-transition trans))
+		(nfa-transition-list nfa))))
+	 (transitions (string-join trans-list "")))
+    ;; fill parameters into string
+    (format dot-format pre-start final-states transitions)))
 
 ;; Generate a png from the graph
 ;; using dot. Display the graph using eog.

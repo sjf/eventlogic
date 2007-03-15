@@ -9,8 +9,8 @@ regex: regex.scm dfa.o nfa.o utils.o
 	bigloo $(OPTIONS) regex.scm dfa.o nfa.o utils.o -o regex
 snapshots: dfa.o utils.o nfa.o snapshots.scm
 	bigloo $(OPTIONS) snapshots.scm dfa.o nfa.o utils.o -o snapshots
-allen-nfa: dfa.o utils.o nfa.o snapshots.o regex.o allen-nfa.scm
-	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o allen-nfa.scm -o allen-nfa
+allen-nfa: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.scm 
+	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.scm -o allen-nfa
 nfa.o:  nfa.scm
 	bigloo $(OPTIONS) -c nfa.scm
 dfa.o: dfa.scm

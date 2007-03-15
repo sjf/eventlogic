@@ -4,10 +4,12 @@
  (include "dfa.sch")
  (import (dfa "dfa.scm")
 	 (nfa "nfa.scm")
-	 (utils "utils.scm"))
+	 (utils "utils.scm")
+	 (regex "regex.scm"))
 ; (main main-snapshots)
  (export (str->snapshot-seq str)
 	 empty-snapshot
+	 (nfa-empty-plus)
 	 (superposition a b)))
 
 
@@ -72,15 +74,22 @@
 	 (trans1 (dfa-transition-list dfa1))
 	 (trans2 (dfa-transition-list dfa2))
 	 (trans-new (map (lambda (pair) (apply union-transition pair))
-			 (cross-product trans1 trans2))))
+			 (cross-product trans1 trans2)))
+	 (alpha-new (union (dfa-alphabet dfa1) (dfa-alphabet dfa2))))
     (dfa
      start-state
      (make-transition-function trans-new)
      trans-new
-     final-states)))
+     final-states
+     alpha-new)))
 
 ;; the empty snapshot: []
 (define empty-snapshot (list))
+
+;; an nfa which accepts []+
+(define (nfa-empty-plus)
+  (nfa-plus (nfa-for-one-symbol empty-snapshot)))
+
 
 (define (main-snapshots argv)
   (if (> (length argv) 1)

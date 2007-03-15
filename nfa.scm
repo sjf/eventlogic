@@ -9,10 +9,22 @@
   (print-nfa x)
   (make-transition-function-nfa l . cmp)
   (nfa->dfa nfa)
+  (nfa-rename-states nfa1)
+  (nfa-trans nfa state sym)
   test-nfa1
   test-nfa2
   test-nfa3))
-  
+
+(define (nfa-trans nfa curr-state symbol)
+  (let ((states
+	 (find-if-all
+	  (lambda (t)
+	    (and (equal? (first t) curr-state)
+		 (equal? (second t) symbol)))
+	  (nfa-transition-list nfa))))
+    (if (null? states) 
+	#f
+	(map third states))))
 
 (define (print-nfa x)
 (let ((out (current-output-port)))
@@ -33,6 +45,13 @@
 ;; The nfa version differs from the dfa transition function
 ;; in that it will return a list
 ;; of next states instead of just one state		
+
+;; transitions should be a list where each element is of the form
+;; (current-state input-symbol next-state)
+;; There may be more than one 
+
+;; cmp is an optional function that will be used to compare the input
+;; symbols for equality
 (define (make-transition-function-nfa transitions . cmp)
   (let ((cmp (if (null? cmp)
 		 equal?
@@ -46,31 +65,65 @@
 	  #f
 	  (map caddr trans)))))) ;; return only the next states
 
-;; These are used when converting nfas to dfas
+;; Generate new symbols for the states in a dfa
+;; This is used after converting an nfa to dfa
+;; to get rid of the long compound state identifiers
+;; and give them more human friendly names.
+;; Or if you are doing an operation on a dfa
+;; which produces a new dfa, it needs to have
+;; different state names to old one.
+(define (dfa-rename-states dfa1)
+  (let* ((mapping (make-hashtable))
+	 (old-states (dfa-states dfa1)))
+    ;; generate new symbols for each state
+    (map (lambda (state)
+	   (hashtable-put! mapping (to-string state) (gensym "q")))
+	 old-states)
+    (let ((new-trans
+	   (map (lambda (trans)
+		  (list 
+		   (hashtable-get mapping (to-string (first trans)))
+		   (second trans)
+		   (hashtable-get mapping (to-string (third trans)))))
+		(dfa-transition-list dfa1)))
+	  (new-start (hashtable-get mapping (to-string (dfa-start-state dfa1))))
+	  (new-final (map (lambda (state)
+			    (hashtable-get mapping (to-string state)))
+			  (dfa-final-states dfa1))))
+      (dfa 
+       new-start
+       (make-transition-function new-trans)
+       new-trans
+       new-final
+       (dfa-alphabet dfa1)))))	 
 
-;; Get the epsilon closure of a set of states
-;; These are the states that are reachable only by
-;; epsilon transitions.
-(define (e-closure nfa states)
-  ;; include the input states in the closure
-  ;; since a state can always go to itself via epsilon
-  (%e-closure nfa states states))
-
-
-(define (%e-closure nfa states closure)
-  (if (null? states)
-      closure
-      ;; Pop the first state from states,
-      ;; then get the states reachable from it over epsilon
-      (let* ((state (car states))
-	     (e-trans-states ((nfa-transition nfa) state 'epsilon))
-             ;make sure we always have a list, and not #f
-	     (valid-e-trans-states (or e-trans-states (list))) 
-	     ;the states that aren't already recorded as reachable
-	     (new-states (list-less valid-e-trans-states closure))
-	     (states (append (cdr states) new-states))
-	     (closure (append closure new-states)))
-        (%e-closure nfa states closure))))
+;; Acts the same as dfa-rename-states
+(define (nfa-rename-states nfa1)
+  (let* ((mapping (make-hashtable))
+	 (old-states (nfa-states nfa1)))
+    ;; generate new symbols for each state
+    (map (lambda (state)
+	   (hashtable-put! mapping (to-string state) (gensym "q")))
+	 old-states)
+    (let ((new-trans
+	   (map (lambda (trans)
+		  (list 
+		   (hashtable-get mapping (to-string (first trans)))
+		   (second trans)
+		   (hashtable-get mapping (to-string (third trans)))))
+		(nfa-transition-list nfa1)))
+	  (new-start (hashtable-get mapping (to-string (nfa-start-state nfa1))))
+	  (new-final (map (lambda (state)
+			    (hashtable-get mapping (to-string state)))
+			  (nfa-final-states nfa1))))
+      (nfa 
+       (nfa-alphabet nfa1)
+       (hashtable->list mapping) ;; list of new states
+       new-start
+       (make-transition-function-nfa new-trans)
+       new-trans
+       new-final))))
+  
 
 ;; Convert a non-deterministic epsilon automaton to a deterministic
 ;; epsilon-free automaton
@@ -82,13 +135,14 @@
 	(dfa-final-states (nfa->dfa-final-states 
 			   (nfa-final-states nfa)
 			   dfa-states))
-	(dfa (dfa dfa-start-state
+	(dfa1 (dfa dfa-start-state
 		  (make-transition-function (first dfa-transitions-and-states))
 		  dfa-transitions
 		  dfa-final-states
-		  (remq 'epsilon (nfa-alphabet nfa)))))
-	dfa))
-    
+		  (remq 'epsilon (nfa-alphabet nfa)))) ;; the same alphabet minus epsilon
+	(dfa2 (dfa-rename-states dfa1)))
+    dfa2))
+
 (define (nfa->dfa-final-states nfa-final-states dfa-states)
   ;; if any of the nfa-states in the dfa-state are final
   ;; then the dfa-state will be a final state too.
@@ -145,14 +199,63 @@
 	(list dfa-transitions dfa-states-marked))))
 
 
-;; Return that states can be reached from the input states over a
+;; Return that states can be reached from the given states over a
 ;; certain symbol
 (define (nfa-move nfa states symbol)
-  (let* ((state-lists (map (lambda (state) ((nfa-transition nfa) state symbol)) states))
-	(non-false-states (list-remove-all state-lists #f))
-	(flattened-state-list (reduce append (list) non-false-states))
-	(unique-states (nub flattened-state-list)))
-     unique-states))
+  ;(print "++nfa-move" states symbol)
+  (let* ((state-lists (map (lambda (state) (nfa-trans nfa state symbol)) states))
+	 (non-false-states (list-remove-all state-lists #f))
+	 (flattened-state-list (reduce append (list) non-false-states))
+	 (unique-states (nub flattened-state-list)))
+    ;(print "++" unique-states)
+    ;;     (print state-lists)
+;;     (print non-false-states)
+    ;;     (print flattened-state-list)
+    unique-states))
+
+
+;; Get the epsilon closure of a set of states
+;; These are the states that are reachable only by
+;; epsilon transitions.
+(define (e-closure nfa states)
+  ;(print "-- e-closure " states)
+  ;; include the input states in the closure
+  ;; since a state can always go to itself via epsilon
+
+  ;; Sort the closure because while in theory it is a set
+  ;; it is implemented as a list.
+  (sort (%e-closure nfa states states)
+	(lambda (a b) (string<?
+		       (if (symbol? a) (symbol->string a) a)
+		       (if (symbol? b) (symbol->string b) b)))))
+
+	
+
+
+(define (%e-closure nfa states closure)
+  (if (null? states)
+      closure
+      ;; Pop the first state from states,
+      ;; then get the states reachable from it over epsilon
+      
+      (let* ((state (car states))
+	     (e-trans-states (nfa-trans nfa state 'epsilon))
+;; 	     (dummy (begin (print e-trans-states)
+;; 			   (map print (nfa-transition-list nfa))
+;; 			   (print "**"  state)))
+		    
+			   
+             ;make sure we always have a set, and not #f or list with duplicates
+	     (valid-e-trans-states (cond ((equal? #f e-trans-states) (list))
+					 (else (nub e-trans-states))))
+	     ;the states that aren't already recorded as reachable
+	     (new-states (list-less valid-e-trans-states closure))
+	     ;; add the new states to the list of states to search
+	     (states (append (cdr states) new-states))
+	     ;; add the new states to the epsilon closure
+	     (closure (append closure new-states)))
+        (%e-closure nfa states closure))))
+
 
 ;; do some tests
 (define test-nfa1 (nfa

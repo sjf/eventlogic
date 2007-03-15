@@ -6,8 +6,10 @@
 	 (nfa "nfa.scm")
 	 (utils "utils.scm"))
 ; (main main-regex)
- (export (nfa-plus nfa)
-	 (nfa-concat nfaa nfab)
+ (export (nfa-plus nfa1)
+	 (nfa-concat nfaA nfaB)
+	 (nfa-star nfa1)
+	 (nfa-or nfaA nfaB)
 	 (nfa-for-one-symbol sym)
 	 (regex->dfa str)
 	 (regex->nfa str)
@@ -96,13 +98,14 @@
 	 (endB   (car (nfa-final-states nfaB)))
 	 (trans  (append (list (list endA 'epsilon startB))
 			 (nfa-transition-list nfaA) (nfa-transition-list nfaB))))
-    (nfa 
-     (union (nfa-alphabet nfaA) (nfa-alphabet nfaB))
-     (append (nfa-states nfaA) (nfa-states nfaB))
-     startA
-     (make-transition-function-nfa trans)
-     trans
-     (list endB))))
+    (nfa-rename-states
+     (nfa 
+      (union (nfa-alphabet nfaA) (nfa-alphabet nfaB))
+      (append (nfa-states nfaA) (nfa-states nfaB))
+      startA
+      (make-transition-function-nfa trans)
+      trans
+      (list endB)))))
 
 (define (nfa-star nfaA)
   ;; build an nfa which accepts L*
@@ -120,13 +123,14 @@
 			      (list endA 'epsilon startA)
 			      (list endA 'epsilon qfinal))
 			(nfa-transition-list nfaA))))
-    (nfa
-     (nfa-alphabet nfaA)
-     (cons q0 (cons qfinal (nfa-states nfaA)))
-     q0
-     (make-transition-function-nfa trans)
-     trans
-     (list qfinal))))
+    (nfa-rename-states
+     (nfa
+      (nfa-alphabet nfaA)
+      (append (list q0 qfinal) (nfa-states nfaA))
+      q0
+      (make-transition-function-nfa trans)
+      trans
+      (list qfinal)))))
 
 (define (nfa-or nfaA nfaB)
   ;; build an nfa which accepts La|Lb where La are strings accepted nfaA
@@ -143,12 +147,13 @@
 		       (list endA 'epsilon qfinal)
 		       (list endB 'epsilon qfinal))
 		 (nfa-transition-list nfaA) (nfa-transition-list nfaB))))
-    (nfa (union  (nfa-alphabet nfaA) (nfa-alphabet nfaB))
-	      (append (nfa-states nfaA) (nfa-states nfaB) (list q0 qfinal))
-	      q0
-	      (make-transition-function-nfa trans)
-	      trans
-	      (list qfinal))))
+    (nfa-rename-states
+     (nfa (union  (nfa-alphabet nfaA) (nfa-alphabet nfaB))
+	  (append (nfa-states nfaA) (nfa-states nfaB) (list q0 qfinal))
+	  q0
+	  (make-transition-function-nfa trans)
+	  trans
+	  (list qfinal)))))
 
 (define (nfa-for-one-symbol sym)
   ;; build an nfa which accepts one symbol

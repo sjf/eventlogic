@@ -18,6 +18,7 @@
     (intersection a b)
 ;;     (sort-strings l)))
     (string-join l s)
+    (to-string a)
     (temp-filename)
 ))
 (define (identity x) x)
@@ -195,6 +196,10 @@
 			   (string-append str s)
 			   (car l))
 			  (cdr l)))))))
+
+(define (to-string a)
+  (format "~a" a))
+
 (define (temp-filename)
   (format "~a~a~a~s" 
 	  (os-tmp) 

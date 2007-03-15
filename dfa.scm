@@ -2,7 +2,7 @@
   (include "dfa.sch")
   (import (utils "utils.scm")
 	  (graph "graph.scm"))
-  (main main)
+;  (main main)
   (export
     (print-dfa x)
     (run-dfa x input)
@@ -10,6 +10,7 @@
     (inverse dfaA)
     (complete dfaA)
     (dfa-intersection dfaA dfaB)
+    (dfa-states dfa)
     test-dfa
     test-dfa1))
     
@@ -180,6 +181,14 @@
 		       new-transitions))))
 	  (else 
 	   new-transitions))))
+
+;; This is a hack because we don't bother storing the states
+(define (dfa-states dfa1)
+  (nub (append (map first (dfa-transition-list dfa1))
+	       (map third (dfa-transition-list dfa1))
+	       (dfa-final-states dfa1)
+	       (list (dfa-start-state dfa1)))))
+		
 		    
   
 (define test-dfa 
