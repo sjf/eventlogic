@@ -62,16 +62,7 @@
   ;[]+-L2-[]+ 
   (let* ((nfa3 (nfa-concat (nfa-empty-plus)
 			   (nfa-concat nfa2 (nfa-empty-plus)))))
-    (print-nfa nfa1)
-    (print-nfa nfa3)
-    (let* ((dfa3 (nfa->dfa nfa3))
-	   (dfa1 (nfa->dfa nfa1))
-	   (dfa4
-	    (superposition dfa1 dfa3)))
-      (print-dfa dfa1)
-      (print-dfa dfa3)
-      (print-dfa dfa4)
-      dfa4)))
+    (superposition (nfa->dfa nfa1) (nfa->dfa nfa3))))
 
 (define (during nfa1 nfa2) (contains nfa2 nfa1))
 
@@ -100,14 +91,9 @@
   (run-relations e1 e2 str relations))
 
 (define (run-relations e1 e2 str relations)
-  (map print-nfa (list e1 e2))
   (map (lambda (f) 
-	 (print (cadr f) " ") 
 	 (let ((dfa1 ((car f) e1 e2)))
-	   (read)
-	   (show-graph (graph dfa1))
-	   (read)
-	   (print (run-dfa dfa1 str))))
+	    (run-dfa dfa1 str)))
        relations))  
    
 
@@ -145,35 +131,33 @@
 	 (nfa1 (parse-tree->nfa (str->parse-tree r1)))
 	 (nfa2 (parse-tree->nfa (str->parse-tree r2))))
 
-  ;----L1----
-  ;[]+-L2-[]+ 
+;;   ;----L1----
+;;   ;[]+-L2-[]+ 
 	   
-    (let* ((nfa3 (nfa-concat (nfa-empty-plus)
-			     (nfa-concat nfa2 (nfa-empty-plus)))))
-      (print-nfa nfa1)
-      (print-nfa nfa3)
+;;     (let* ((nfa3 (nfa-concat (nfa-empty-plus)
+;; 			     (nfa-concat nfa2 (nfa-empty-plus)))))
+;;       (print-nfa nfa1)
+;;       (print-nfa nfa3)
       
-      (let* ((dfa3 (nfa->dfa nfa3))
-	     (dfa1 (nfa->dfa nfa1))
-	     (dfa4
-	      (superposition dfa1 dfa3)))
-	(print-dfa dfa1)
-	(print-dfa dfa3)
-	;(show-graph (graph dfa3))
-	(print-dfa dfa4)
-	;(show-graph (graph dfa1))
-	;(show-graph (graph dfa3))
-	;(show-graph (graph dfa4))
-	(print (run-dfa dfa4 str))
-	dfa4)))
+;;       (let* ((dfa3 (nfa->dfa nfa3))
+;; 	     (dfa1 (nfa->dfa nfa1))
+;; 	     (dfa4
+;; 	      (superposition dfa1 dfa3)))
+;; 	(print-dfa dfa1)
+;; 	(print-dfa dfa3)
+;; 	;(show-graph (graph dfa3))
+;; 	(print-dfa dfa4)
+;; 	;(show-graph (graph dfa1))
+;; 	;(show-graph (graph dfa3))
+;; 	;(show-graph (graph dfa4))
+;; 	(print (run-dfa dfa4 str))
+;; 	dfa4)))
 
 ;;     (run-relations nfa1 nfa2 str
 ;; 		   `((,contains contains)
 ;; 		     (,starts starts)
 ;; 		     (,ends ends))))
-  (exit)
-  
-  
+;;   (exit)
   (let loop ()
     (let* ((e1 (begin (print "event 1 regex: ") (regex->nfa (read-line))))
 	   (e2 (begin (print "event 2 regex: ") (regex->nfa (read-line))))
@@ -194,4 +178,4 @@
 	;     during starts started-by ends ended-by)))
 
   (exit)
-)
+))

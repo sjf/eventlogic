@@ -52,12 +52,12 @@
 ;; The new current and next state will be pairs of the corresponding
 ;; states from trans1 and trans2.
 (define (union-transition trans1 trans2)
-  (let ((qc1 (car trans1)) ;; current state
-	(qc2 (car trans2))
-	(sym1 (cadr trans1)) ;; input symbol, must be a list
-	(sym2 (cadr trans2))
-	(qn1 (caddr trans1)) ;; next state
-	(qn2 (caddr trans2)))
+  (let ((qc1 (first trans1)) ;; current state
+	(qc2 (first trans2))
+	(sym1 (second trans1)) ;; input symbol, must be a list
+	(sym2 (second trans2))
+	(qn1 (third trans1)) ;; next state
+	(qn2 (third trans2)))
     (list (list qc1 qc2) (union-snapshot sym1 sym2) (list qn1 qn2))))
 
 (define (union-snapshot snapshot1 snapshot2)
@@ -75,12 +75,13 @@
 	 (trans2 (dfa-transition-list dfa2))
 	 (trans-new (map (lambda (pair) (apply union-transition pair))
 			 (cross-product trans1 trans2)))
-	 (alpha-new (union (dfa-alphabet dfa1) (dfa-alphabet dfa2))))
-    (dfa
-     start-state
-     trans-new
-     final-states
-     alpha-new)))
+	 (alpha-new (map second trans-new)))
+    (dfa-rename-states
+     (dfa
+      start-state
+      trans-new
+      final-states
+      alpha-new))))
 
 ;; the empty snapshot: []
 (define empty-snapshot (list))

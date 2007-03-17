@@ -31,7 +31,7 @@
 
 (define regex-grammar
   (lalr-grammar
-   ; terminals (PLUS isn't implemented yet)
+   ; terminals  (PLUS isn't implemented in the grammar)
    (CHARS DOT STAR BAR OPENPARAN CLOSEPARAN OPEN_SQBRACKET CLOSE_SQBRACKET PLUS)
    ;productions
    (regex ((orr) orr))

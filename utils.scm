@@ -24,12 +24,12 @@
 (define (identity x) x)
 
 ;; these are already defined by chicken
- (define (first l)
-   (car l))
- (define (second l)
-   (cadr l))
- (define (third l)
-   (caddr l))
+(define (first l)
+  (car l))
+(define (second l)
+  (cadr l))
+(define (third l)
+  (caddr l))
 
 (define (compose f1 f2)
   (lambda (x)
@@ -45,7 +45,7 @@
 		    c
 		    (loop (cdr l) (f c (car l))))))))
 
-;; return the first item in l for which (p item) is true
+;; return the first item in l for which predicate p is true
 (define (find-if p l)
   (if (null? l)
       #f
@@ -53,7 +53,7 @@
           (car l)
           (find-if p (cdr l)))))
 
-;; Remove item from list l, returns a new list
+;; Remove the first occurent of item from list l, returns a new list
 (define (list-remove l item)
   (if (null? l)
       l
@@ -63,6 +63,7 @@
 	    b
 	    (cons a (list-remove b item))))))
 
+;; Remove all occurences of item from the list
 (define (list-remove-all l item)
   (if (null? l)
       l
@@ -72,7 +73,7 @@
          (list-remove-all b item)
          (cons a (list-remove-all b item))))))
 
-;; The list of items in l for which (p item) is true
+;; The list of items in l for which predicate p is true
 (define (find-if-all p l)
   (cond ((null? l) (list))
 	((p (car l)) 
@@ -88,7 +89,7 @@
 	    (b (cdr l2)))
 	(list-less (list-remove l1 a) b))))
 
-;; remove the duplicates from l, returns a new list
+;; Returns a new list with the duplicates removed
 (define (nub l)
   (let loop ((b l)	
 	     (n (list)))
@@ -160,7 +161,7 @@
 	    (loop intersec (cdr a) b))
 	intersec)))
 		   
-      
+;; chicken only      
 ;; removes the runtime arguments to chicken and the program name, argv[0]
 ;; chicken arguments begin with -:
 ;;(define (get-args)
@@ -174,16 +175,6 @@
 (define (sort-strings l)
   (sort l (lambda (a b) (< (string-compare3 a b) 0))))
 
-;; (use syntax-case) ;; chicken
-
-;; (define-syntax for-each
-;;   (syntax-rules _a
-;;     ((_ (x values) bodyform1 ...)
-;;      (do ((vals values (cdr vals)))
-;;  	 ((null? vals))
-;;        (let ((x (car vals))) bodyform1 ...)))))
-;;example:
-;;(for-each (x '(1 2 3)) (display x) (display ","))
 
 ; join elements in a list of strings using s as a delimter
 (define (string-join l s)
@@ -201,8 +192,15 @@
   (format "~a" a))
 
 (define (temp-filename)
-  (format "~a~a~a~s" 
-	  (os-tmp) 
-	  (file-separator)
-	  "tmp" 
-	  (random 65535)))
+  (let ((filename
+	 (format "~a~a~a~s" 
+		 (os-tmp) 
+		 (file-separator)
+		 "tmp" 
+		 (random 65535))))
+    ;; remove this file at program exit
+    (register-exit-function! 
+     (lambda (exit-status)
+       (delete-file filename)))
+    filename))
+    
