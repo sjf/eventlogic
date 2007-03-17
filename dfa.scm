@@ -2,15 +2,17 @@
   (include "dfa.sch")
   (import (utils "utils.scm")
 	  (graph "graph.scm"))
-;  (main main)
+  (main main)
   (export
-    (print-dfa x)
-    (run-dfa x input)
-    (inverse dfaA)
-    (complete dfaA)
+    (print-dfa dfaA)
+    (run-dfa dfaA input)
+    (dfa-inverse dfaA)
+    (dfa-complete dfaA)
     (dfa-intersection dfaA dfaB)
-    (dfa-states dfa)
-    (dfa-rename-states dfa)
+    (dfa-less dfaA dfaB)
+    (dfa-states dfaA)
+    (dfa-remove-unreachable-states! dfaA)
+    (dfa-rename-states dfaA)
     test-dfa
     test-dfa1))
     
@@ -69,7 +71,7 @@
 ;; in the language.
 ;; This will add in the necessary extra transitions, which will go
 ;; to a new sink state
-(define (complete dfaA)
+(define (dfa-complete dfaA)
   (define transitions (dfa-transition-list dfaA))
   (define sink-state (gensym "sink"))
   (let loop0 ((states (nub (append 
@@ -100,8 +102,8 @@
 		 (dfa-alphabet dfaA)))))))
 	
 
-(define (inverse dfaA)
-  (let* ((cdfa (complete dfaA))
+(define (dfa-inverse dfaA)
+  (let* ((cdfa (dfa-complete dfaA))
 	 (states (nub (append
 		       (map first (dfa-transition-list cdfa))
 		       (map third (dfa-transition-list cdfa))))))
@@ -148,6 +150,9 @@
 				(dfa-final-states dfaB))
 		 new-states)
 		alphabet))))))
+
+(define (dfa-less dfa1 dfa2)
+  (dfa-intersection dfa1 (dfa-inverse dfa2)))
   
 ;; return a set of merged transtions for dfaA and dfaB
 ;; from stateA and stateB over all the symbols in alphabet
@@ -172,6 +177,45 @@
 	  (else 
 	   new-transitions))))
 
+(define (dfa-remove-unreachable-states! dfaA)  
+  (let loop ((unreachable-states (%unreachable-states dfaA)))
+    (cond ((not (null? unreachable-states))
+	   ;; remove all the transitions that have
+	   ;; an unreachable states as the source
+	   (let ((new-trans (list-remove-if 
+			     (lambda (trans)
+			       (member (first trans) unreachable-states))
+			     (dfa-transition-list dfaA))))
+	     (dfa-transition-list-set! dfaA new-trans)
+	     ;; remove any final states that are unreachable
+	     (dfa-final-states-set! dfaA (list-less (dfa-final-states dfaA) unreachable-states))
+	     (loop (%unreachable-states dfaA))))
+	  (else	dfaA))))
+
+;; Returns all the unreachable states in the dfa
+(define (%unreachable-states dfaA)
+  (let loop ((states (dfa-states dfaA))
+	      (unreachable-states (list)))
+    (if (not (null? states))
+	(if (%unreachable-state? dfaA (car states))
+	    (loop (cdr states) (cons (car states)
+				     unreachable-states))
+	    (loop (cdr states) unreachable-states))
+	unreachable-states)))
+
+(define (%unreachable-state? dfaA state)
+  (not
+   (find-if
+    ;; states are reachable if..
+    (lambda (transition)
+      ;; the start state is always reachable
+      (or (equal? state (dfa-start-state dfaA))
+	  ;; this state is the destination of some transition
+	  (and (equal? state (third transition))
+	       ;; where it is not also the source 
+	       (not (equal? state (first transition))))))
+    (dfa-transition-list dfaA))))
+
 ;; This is a hack because we don't bother storing the states
 (define (dfa-states dfa1)
   (nub (append (map first (dfa-transition-list dfa1))
@@ -179,11 +223,9 @@
 	       (dfa-final-states dfa1)
 	       (list (dfa-start-state dfa1)))))
 		
-
-
 ;; Generate new symbols for the states in a dfa
 ;; If you are constructing a dfa based on another
-;; it must have different states names.
+;; it must have different symbols for the names of states.
 (define (dfa-rename-states dfa1)
   (let* ((mapping (make-hashtable))
 	 (old-states (dfa-states dfa1)))
@@ -236,19 +278,37 @@
    (list 'qB)
    '((d) (e) (f))))
 
+(define test-dfa2
+  (dfa
+   'qA
+   '((qA 1 qB)
+     (qA 2 qC)
+     (qA 3 qA)
+     (qB 4 qE)
+     (qD 3 qE)
+     (qE 4 qE)
+     (qE 5 qF))
+   '(qA qE)
+   '(1 2 3 4 5)))
+
+
 (define (main argv)
+  (show-graph (graph test-dfa2))
+  (show-graph (graph (dfa-remove-unreachable-states! test-dfa2)))
+  (exit)
+
 ; some tests
 (print-dfa test-dfa)
 (print "should accept")
 (print (run-dfa test-dfa '( a b c d e)))
 (print "should reject")
 (print (run-dfa test-dfa '( a b d e)))
-(print-dfa (complete test-dfa))
-(print-dfa (inverse test-dfa))
-(print-dfa (complete test-dfa1))
-(print-dfa (inverse test-dfa1))
+(print-dfa (dfa-complete test-dfa))
+(print-dfa (dfa-inverse test-dfa))
+(print-dfa (dfa-complete test-dfa1))
+(print-dfa (dfa-inverse test-dfa1))
 ;(show-graph (graph test-dfa))
-(print-dfa (dfa-intersection (complete test-dfa) (complete test-dfaA)))
+(print-dfa (dfa-intersection (dfa-complete test-dfa) (dfa-complete test-dfaA)))
 (print-dfa (dfa-intersection test-dfa test-dfaA))
 ;(show-graph (graph (dfa-intersection test-dfa test-dfa))))
 )

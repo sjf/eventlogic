@@ -51,7 +51,7 @@
 ;; of the symbols of trans1 trans2
 ;; The new current and next state will be pairs of the corresponding
 ;; states from trans1 and trans2.
-(define (union-transition trans1 trans2)
+(define (superpos-transition trans1 trans2)
   (let ((qc1 (first trans1)) ;; current state
 	(qc2 (first trans2))
 	(sym1 (second trans1)) ;; input symbol, must be a list
@@ -73,15 +73,19 @@
 	 (final-states (cross-product (dfa-final-states dfa1) (dfa-final-states dfa2)))
 	 (trans1 (dfa-transition-list dfa1))
 	 (trans2 (dfa-transition-list dfa2))
-	 (trans-new (map (lambda (pair) (apply union-transition pair))
+	 (new-trans (map (lambda (pair) (apply superpos-transition pair))
 			 (cross-product trans1 trans2)))
-	 (alpha-new (map second trans-new)))
+	 (new-alphabet (nub (append 
+			     (map second new-trans) 
+			     (dfa-alphabet dfa1) 
+			     (dfa-alphabet dfa2)))))
     (dfa-rename-states
-     (dfa
-      start-state
-      trans-new
-      final-states
-      alpha-new))))
+     (dfa-remove-unreachable-states!
+      (dfa
+       start-state
+       new-trans
+       final-states
+       new-alphabet)))))
 
 ;; the empty snapshot: []
 (define empty-snapshot (list))

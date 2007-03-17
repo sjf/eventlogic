@@ -9,6 +9,7 @@
     (find-if p l)
 ;;     (list-remove l item)
     (list-remove-all l item)
+    (list-remove-if p item)
     (find-if-all p l)
     (list-less l1 l2)
     (nub l)
@@ -72,6 +73,14 @@
        (if (equal? a item)
          (list-remove-all b item)
          (cons a (list-remove-all b item))))))
+
+;; Remove all the items from l for which p is true
+(define (list-remove-if p l)
+  (cond ((null? l) (list))
+	((p (car l))
+	 (list-remove-if p (cdr l)))
+	(else 
+	 (cons (car l) (list-remove-if p (cdr l))))))
 
 ;; The list of items in l for which predicate p is true
 (define (find-if-all p l)
@@ -199,8 +208,8 @@
 		 "tmp" 
 		 (random 65535))))
     ;; remove this file at program exit
-    (register-exit-function! 
-     (lambda (exit-status)
-       (delete-file filename)))
+;;     (register-exit-function! 
+;;      (lambda (exit-status)
+;;        (delete-file filename)))
     filename))
     
