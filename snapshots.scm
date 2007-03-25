@@ -75,10 +75,13 @@
 	 (trans2 (dfa-transition-list dfa2))
 	 (new-trans (map (lambda (pair) (apply superpos-transition pair))
 			 (cross-product trans1 trans2)))
-	 (new-alphabet (nub (append 
-			     (map second new-trans) 
-			     (dfa-alphabet dfa1) 
-			     (dfa-alphabet dfa2)))))
+	 ;; TODO: this isn't really correct
+	 ;; it should be powerset(phi(dfa1) union phi(dfa2))
+	 (new-alphabet (dfa-alphabet dfa1)))
+;;  	 (new-alphabet (nub (append 
+;;  			     (map second new-trans) 
+;;  			     (dfa-alphabet dfa1) 
+;;  			     (dfa-alphabet dfa2)))))
     (dfa-rename-states
      (dfa-remove-unreachable-states!
       (dfa

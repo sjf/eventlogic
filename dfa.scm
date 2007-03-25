@@ -2,7 +2,7 @@
   (include "dfa.sch")
   (import (utils "utils.scm")
 	  (graph "graph.scm"))
-  (main main)
+;  (main main)
   (export
     (print-dfa dfaA)
     (run-dfa dfaA input)
@@ -74,9 +74,10 @@
 (define (dfa-complete dfaA)
   (define transitions (dfa-transition-list dfaA))
   (define sink-state (gensym "sink"))
-  (let loop0 ((states (nub (append 
-			    (map first (dfa-transition-list dfaA))
-			    (map third (dfa-transition-list dfaA))))))
+  (let loop0 ((states (cons sink-state
+			    (nub (append 
+				  (map first (dfa-transition-list dfaA))
+				  (map third (dfa-transition-list dfaA)))))))
 ;    (print states)
     (cond ((not (null? states))
 	   (let loop1 ((alphabet (dfa-alphabet dfaA)))
@@ -85,8 +86,8 @@
 		   ; (print (car states) " " (car alphabet) "  "
 			;   ((dfa-transition dfaA) (car states) (car alphabet)))
 		    (if (equal? (dfa-trans dfaA (car states) (car alphabet)) #f)
-			; there is no transition for this state and symbol
-			; add a transition to the sink state
+			; There is no transition for this state and symbol
+			; So add a transition to the sink state
 			(set! transitions
 			      (cons (list (car states)
 					  (car alphabet)
@@ -115,7 +116,7 @@
 			   (dfa-final-states cdfa)))
 	      (loop (cdr states) (cons (car states) new-final))
 	      (loop (cdr states) new-final))
-	  ; build a new dfa and return it
+	  ; build the new dfa and return it
 	  (dfa-rename-states
 	   (dfa (dfa-start-state cdfa)
 		(dfa-transition-list cdfa)
@@ -153,6 +154,15 @@
 
 (define (dfa-less dfa1 dfa2)
   (dfa-intersection dfa1 (dfa-inverse dfa2)))
+;;   (let* ((i (dfa-inverse dfa2))
+;; 	 (l (dfa-intersection dfa1 i)))
+;;     (print "inv")(read)
+;;     (show-graph (graph i))
+;;     (print "dfa1")(read)
+;;     (show-graph (graph dfa1))
+;;     (print "intersection")(read)
+;;     (show-graph (graph l))
+;;     l))
   
 ;; return a set of merged transtions for dfaA and dfaB
 ;; from stateA and stateB over all the symbols in alphabet

@@ -13,7 +13,7 @@
     (find-if-all p l)
     (list-less l1 l2)
     (nub l)
-;;     (power-set l)
+    (powerset l)
     (cross-product l1 l2)
     (union a b)
     (intersection a b)
@@ -109,30 +109,13 @@
 	   (loop (cdr b) (cons (car b) n))))))
 
 ;; Return the power set of l, eg. all the subsets of l
-(define (power-set l)
-  (if (null? l)
+(define (powerset l)
+  (if (null? l) 
       (list (list))
-      (cons (list) (%power-set l))))
-
-(define (%power-set l)
-  ;; This doesn't include the empty set in the power set,
-  ;; use power-set to get the complete powerset. It also
-  ;; won't work properly if you give it () for l.
-  (let loop ((pow  (list l))
-	     (item (car l))
-	     (a    (cdr l))
-	     (b    (list)))
-    (cond ((and (null? a)
-		(not (null? b))) ;; check this here so we don't add () to the power set
-	                         ;; if we do we will end up with multiple copies of it
-	   (append (%power-set (append a b)) pow))
-	  ((not (null? a))
-	   (loop (append (%power-set (append a b)) pow)
-		 (car a)
-		 (cdr a)
-		 (cons item b)))
-	  (else
-	   pow))))
+      (let* ((a (car l))
+	     (rest (cdr l))
+	     (prest (powerset rest)))
+	(append prest (map (lambda (x) (cons a x)) prest)))))
 
 ;; returns a list of pairs of a and each element of l
 (define (%pair-each a l)

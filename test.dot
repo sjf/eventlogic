@@ -1,0 +1,9 @@
+digraph G {
+	rankdir = LR; /* left to right */
+	size="8,5"
+	node [shape=doublecircle]; q2;
+	node [shape=circle];
+	 q0 -> q1 [label="[a]"];
+	 q1 -> q1 [label="[a,b]"];
+	 q1 -> q2 [label="[c,d]"];
+}

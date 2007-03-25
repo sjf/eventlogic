@@ -1,0 +1,10 @@
+(module ex
+   (library srfi-1))
+(define l '(1 2 3))
+(define l2 '(b o b))
+(print l)
+(print l2)
+(append! l l2)
+(print l)
+(set-cdr! (cdr l2) '(x y z))
+(print l)

@@ -1,0 +1,11 @@
+(define f (lambda (x) x))
+(define g (lambda (y) y))
+(define l (list f g))
+(print f)
+(print 
+(print ,(quote f))
+
+
+(map print l)
+(map (lambda (a) (print a)) l)
+(map (lambda (a) (print ,(quote a))) l)

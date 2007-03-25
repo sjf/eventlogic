@@ -39,23 +39,23 @@
     rankdir=LR;
     node[shape=circle style=invis]
     ~a;
-    node[shape=doublecircle style=solid];
-    ~a;
-    node [shape=circle]
+    ~a
+    node[shape=circle style=solid]
     ~a
 }")
+(define dot-final-states
+  "node[shape=doublecircle style=solid]
+    ~a;")
 
 (define (string-quote x)
   (format "\"~a\"" x))
 
 (define (graph-dfa dfa)
   (let* ((final-states (if (null? (dfa-final-states dfa))
-			   ;; this will not appear on the final graph
-			   ;; it is just here to make sure a correctly
-			   ;; formatted dot file is produced
-			   (gensym "dummy")
-			   (string-join 
-			    (map string-quote (dfa-final-states dfa)) " ")))
+			   ""
+			   (format dot-final-states
+				   (string-join 
+				    (map string-quote (dfa-final-states dfa)) " "))))
 	(pre-start (gensym "dummy"))
 	(transitions (map graph-transition
 			  (append (dfa-transition-list dfa)
@@ -74,9 +74,10 @@
 
 (define (graph-nfa nfa)
   (let* ((final-states (if (null? (nfa-final-states nfa))
-			   (gensym "dummy")
-			   (string-join 
-			    (map string-quote (nfa-final-states nfa)) " ")))
+			   ""
+			   (format dot-final-states
+				   (string-join 
+				    (map string-quote (nfa-final-states nfa)) " "))))
 	 (pre-start (gensym "dummy"))
 	 (trans-list
 	  (cons
