@@ -5,8 +5,9 @@
  (import (dfa "dfa.scm")
 	 (nfa "nfa.scm")
 	 (utils "utils.scm")
-	 (regex "regex.scm"))
-; (main main-snapshots)
+	 (regex "regex.scm")
+	 (graph "graph.scm"))
+ (main main-snapshots)
  (export (str->snapshot-seq str)
 	 empty-snapshot
 	 (nfa-empty-plus)
@@ -78,10 +79,6 @@
 	 ;; TODO: this isn't really correct
 	 ;; it should be powerset(phi(dfa1) union phi(dfa2))
 	 (new-alphabet (dfa-alphabet dfa1)))
-;;  	 (new-alphabet (nub (append 
-;;  			     (map second new-trans) 
-;;  			     (dfa-alphabet dfa1) 
-;;  			     (dfa-alphabet dfa2)))))
     (dfa-rename-states
      (dfa-remove-unreachable-states!
       (dfa
@@ -90,6 +87,21 @@
        final-states
        new-alphabet)))))
 
+(define (subsumptive-closure dfaA)
+  (superposition dfaA (dfa-universal (dfa-alphabet dfaA))))
+
+(define (constraint dfaA dfaB)
+  ;; A and B need to have the same alphabet
+  (let* ((alphabet (dfa-alphabet dfaA))
+	 (s-closure-A (subsumptive-closure dfaA))
+	 (s-closure-B (subsumptive-closure dfaB))
+	 (intersec (dfa-intersection s-closure-A (dfa-inverse s-closure-B)))
+	 (temp 
+	  (dfa-concat (dfa-universal alphabet)
+		      (dfa-concat intersec
+				  (dfa-universal alphabet)))))
+    (dfa-inverse temp)))
+
 ;; the empty snapshot: []
 (define empty-snapshot (list))
 
@@ -97,13 +109,29 @@
 (define (nfa-empty-plus)
   (nfa-plus (nfa-for-one-symbol empty-snapshot)))
 
+(define A
+  (dfa 
+   'q0
+   '((q0 (a) q1))
+   '(q1)
+   '(() (a) (b) (a b))))
+(define B
+  (dfa
+   'qA
+   '((qA (b) qB))
+   '(qB)
+   '(() (a) (b) (a b))))
+
 
 (define (main-snapshots argv)
-  (if (> (length argv) 1)
-      (begin
-	(print (str->snapshot-seq (string-join (cdr argv) " ")))
-	(print "A")
-	(print (str->snapshot-seq "[a][a b][a b][a]"))
-	(print "B")
-	(print-dfa (superposition test-dfa test-dfa1)))))
+  (let ((c (constraint A B)))
+    (map print-dfa (list A B c))
+    (show-graph (graph c))))
+;;   (if (> (length argv) 1)
+;;       (begin
+;; 	(print (str->snapshot-seq (string-join (cdr argv) " ")))
+;; 	(print "A")
+;; 	(print (str->snapshot-seq "[a][a b][a b][a]"))
+;; 	(print "B")
+;; 	(print-dfa (superposition test-dfa test-dfa1)))))
  

@@ -92,17 +92,21 @@
   ;; by nfaA and Lb are strings accepted by nfaB
   (let* ((startA (nfa-start-state nfaA))
 	 (startB (nfa-start-state nfaB))
-	 (endA   (car (nfa-final-states nfaA)))
-	 (endB   (car (nfa-final-states nfaB)))
-	 (trans  (append (list (list endA 'epsilon startB))
-			 (nfa-transition-list nfaA) (nfa-transition-list nfaB))))
+	 (endB (nfa-final-states nfaB))
+	 ;; Add epsilon transitions from each of the final 
+	 ;; states of nfaA to the start state of nfaB
+	 (trans  (append (map (lambda (endA)
+				(list endA 'epsilon startB))
+			      (nfa-final-states nfaA))
+			 (nfa-transition-list nfaA) 
+			 (nfa-transition-list nfaB))))
     (nfa-rename-states
      (nfa 
       (union (nfa-alphabet nfaA) (nfa-alphabet nfaB))
       (append (nfa-states nfaA) (nfa-states nfaB))
       startA
       trans
-      (list endB)))))
+      endB))))
 
 (define (nfa-star nfaA)
   ;; build an nfa which accepts L*
@@ -137,6 +141,8 @@
 	 (startB (nfa-start-state nfaB))
 	 (endA (car (nfa-final-states nfaA))) 
 	 (endB (car (nfa-final-states nfaB)))
+	 ;; This is only works for nfas which have one final
+	 ;; state, which includes all the ones produced from a regex
 	 (trans (append 
 		 (list (list q0 'epsilon startA)
 		       (list q0 'epsilon startB)

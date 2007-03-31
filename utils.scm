@@ -13,6 +13,7 @@
     (find-if-all p l)
     (list-less l1 l2)
     (nub l)
+    (flatten l)
     (powerset l)
     (cross-product l1 l2)
     (union a b)
@@ -107,6 +108,14 @@
 	   (loop (cdr b) n))
 	  (else
 	   (loop (cdr b) (cons (car b) n))))))
+
+;; flatten a list of lists
+(define (flatten l)
+  (cond ((null? l) l)
+	((list? (car l))
+	 (append (car l) (flatten (cdr l))))
+	(else 
+	 (cons (car l) (flatten (cdr l))))))
 
 ;; Return the power set of l, eg. all the subsets of l
 (define (powerset l)

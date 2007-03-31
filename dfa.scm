@@ -1,11 +1,17 @@
 (module dfa
   (include "dfa.sch")
+  (include "nfa.sch")
   (import (utils "utils.scm")
-	  (graph "graph.scm"))
+	  (graph "graph.scm")
+	  (nfa "nfa.scm")
+	  (regex "regex.scm"))
 ;  (main main)
   (export
     (print-dfa dfaA)
     (run-dfa dfaA input)
+    (dfa->nfa dfaA)
+    (dfa-concat dfaA dfaB)
+    (dfa-universal alphabet)
     (dfa-inverse dfaA)
     (dfa-complete dfaA)
     (dfa-intersection dfaA dfaB)
@@ -66,6 +72,54 @@
 	    (else
 	     (%run-dfa next-state dfa (cdr input))))))))
 
+(define (dfa->nfa dfaA)
+  (nfa (dfa-alphabet dfaA)
+       (dfa-states dfaA)
+       (dfa-start-state dfaA)
+       (dfa-transition-list dfaA)
+       (dfa-final-states dfaA)))
+
+;; Concatenate two dfas.
+;; It uses the routine to concatenate nfas.
+(define (dfa-concat dfaA dfaB)
+  (let* ((nfaA (dfa->nfa dfaA))
+	 (nfaB (dfa->nfa dfaB))
+	 (nfaC (nfa-concat nfaA nfaB)))
+    (nfa->dfa nfaC)))
+
+;; ;; Concatenate two dfas.
+;; ;; The start state of B becomes the final state of dfaA.
+;; ;; Replace each reference to the start state of dfaB
+;; ;; with a references to the final states of dfaA.
+;; (define (dfa-concat dfaA dfaB)
+;;   (let* ((qfinal-A (dfa-final-states dfaA))
+;; 	 (qfinal-B (dfa-final-states dfaB))
+;; 	 (q0-B (dfa-start-state dfaB))
+;; 	 (new-start (dfa-start-state dfaA))
+;; 	 (new-final (if (member q0-B qfinal-B)
+;; 			;; replace q0-B with the set qfinal-A
+;; 			(append (remq q0-B qfinal-B)
+;; 				qfinal-A)
+;; 			qfinal-B))
+;; 	 (new-trans-B (flatten 
+;; 		       (map (lambda (qfinal)
+;; 			      (map (lambda (trans)
+;; 				     (let ((qA (if (equal? (first trans) q0-B)
+;; 						   qfinal (first trans)))
+;; 					   (qB (if (equal? (third trans) q0-B)
+;; 						   qfinal (third trans))))
+;; 				       (list qA (second trans) qB)))
+;; 				   (dfa-transition-list dfaB)))
+;; 			   qfinal-A)))
+;; 	 (new-trans (append (dfa-transition-list dfaA) new-trans-B))
+;; 	 (new-alphabet (union (dfa-alphabet dfaA) (dfa-alphabet dfaB))))
+;;     (print new-trans)
+;; ;  (dfa-rename-states 
+;;    (dfa 
+;;     new-start
+;;     new-trans
+;;     new-final
+;;     new-alphabet)))
 
 ;; A complete dfa has transitions out of every state for every symbol
 ;; in the language.
@@ -101,7 +155,19 @@
 		 transitions
 		 (dfa-final-states dfaA)
 		 (dfa-alphabet dfaA)))))))
-	
+
+(define (dfa-universal alphabet)
+  (let* ((q0 (gensym "q"))
+	 (trans (map 
+		 (lambda (sym)
+		   (list q0 sym q0))
+		 alphabet)))
+    (dfa 
+     q0
+     trans
+     (list q0)
+     alphabet)))
+	 
 
 (define (dfa-inverse dfaA)
   (let* ((cdfa (dfa-complete dfaA))
@@ -264,11 +330,11 @@
 (define test-dfa 
   (dfa
    'q0
-   (list (list 'q0 'a 'q1)
-	 (list 'q1 'b 'q0)
-	 (list 'q0 'c 'q2))
-   (list 'q2)
-   '(a b c)))
+   (list (list 'q0 '(a) 'q1)
+	 (list 'q1 '(b) 'q0)
+	 (list 'q0 '(c) 'q2))
+   (list 'q2 'q0)
+   '((a) (b) (c))))
  
 (define test-dfaA
   (dfa
@@ -285,7 +351,7 @@
    (list (list 'qA '(d) 'qB)
 	 (list 'qB '(e) 'qA)
 	 (list 'qA '(f) 'qB))
-   (list 'qB)
+   (list 'qB 'qA)
    '((d) (e) (f))))
 
 (define test-dfa2
@@ -301,12 +367,31 @@
    '(qA qE)
    '(1 2 3 4 5)))
 
+(define A
+  (dfa 
+   'q0
+   '((q0 a q1)
+     (q1 b q0)
+     (q0 c q2))
+   '(q0)
+   '(a b c)))
+(define B
+  (dfa
+   'qA
+   '((qA d qA))
+   '(qA)
+   '(d)))
 
 (define (main argv)
-  (show-graph (graph test-dfa2))
-  (show-graph (graph (dfa-remove-unreachable-states! test-dfa2)))
+  (print-dfa test-dfa)
+  (print-dfa test-dfa1)
+  (let ((c (dfa-concat test-dfa test-dfa1)))
+    (print-dfa c)
+    (show-graph (graph c)))
   (exit)
 
+;  (show-graph (graph test-dfa2))
+;  (show-graph (graph (dfa-remove-unreachable-states! test-dfa2)))
 ; some tests
 (print-dfa test-dfa)
 (print "should accept")
@@ -321,5 +406,8 @@
 (print-dfa (dfa-intersection (dfa-complete test-dfa) (dfa-complete test-dfaA)))
 (print-dfa (dfa-intersection test-dfa test-dfaA))
 ;(show-graph (graph (dfa-intersection test-dfa test-dfa))))
+(print "------")
+
+	 
 )
 ;;
