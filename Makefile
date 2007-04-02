@@ -25,3 +25,6 @@ regex.o: regex.scm
 	bigloo $(OPTIONS) -c regex.scm 
 clean:
 	rm -f *.o
+make:
+	touch *.scm 
+	touch *.sch

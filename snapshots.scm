@@ -74,11 +74,14 @@
 	 (final-states (cross-product (dfa-final-states dfa1) (dfa-final-states dfa2)))
 	 (trans1 (dfa-transition-list dfa1))
 	 (trans2 (dfa-transition-list dfa2))
-	 (new-trans (map (lambda (pair) (apply superpos-transition pair))
-			 (cross-product trans1 trans2)))
+	 (new-trans (nub (map (lambda (pair) (apply superpos-transition pair))
+			 (cross-product trans1 trans2))))
 	 ;; TODO: this isn't really correct
 	 ;; it should be powerset(phi(dfa1) union phi(dfa2))
 	 (new-alphabet (dfa-alphabet dfa1)))
+    (map print trans1)
+    (map print trans2)
+    (map print new-trans)
     (dfa-rename-states
      (dfa-remove-unreachable-states!
       (dfa
@@ -95,12 +98,15 @@
   (let* ((alphabet (dfa-alphabet dfaA))
 	 (s-closure-A (subsumptive-closure dfaA))
 	 (s-closure-B (subsumptive-closure dfaB))
-	 (intersec (dfa-intersection s-closure-A (dfa-inverse s-closure-B)))
+	 (s-closure-B-inv (dfa-complement s-closure-B))
+	 (intersec (dfa-intersection s-closure-A s-closure-B-inv))
 	 (temp 
 	  (dfa-concat (dfa-universal alphabet)
-		      (dfa-concat intersec
-				  (dfa-universal alphabet)))))
-    (dfa-inverse temp)))
+		      intersec
+		      (dfa-universal alphabet))))
+    (map (lambda (d) (write "*") (read) (show-graph (graph d)))
+	 (list s-closure-A s-closure-B s-closure-B-inv intersec temp))
+    (dfa-complement temp)))
 
 ;; the empty snapshot: []
 (define empty-snapshot (list))

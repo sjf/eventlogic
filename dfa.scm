@@ -10,9 +10,9 @@
     (print-dfa dfaA)
     (run-dfa dfaA input)
     (dfa->nfa dfaA)
-    (dfa-concat dfaA dfaB)
+    (dfa-concat dfaA dfaB . rest)
     (dfa-universal alphabet)
-    (dfa-inverse dfaA)
+    (dfa-complement dfaA)
     (dfa-complete dfaA)
     (dfa-intersection dfaA dfaB)
     (dfa-less dfaA dfaB)
@@ -81,10 +81,8 @@
 
 ;; Concatenate two dfas.
 ;; It uses the routine to concatenate nfas.
-(define (dfa-concat dfaA dfaB)
-  (let* ((nfaA (dfa->nfa dfaA))
-	 (nfaB (dfa->nfa dfaB))
-	 (nfaC (nfa-concat nfaA nfaB)))
+(define (dfa-concat dfaA dfaB . rest)
+  (let* ((nfaC (apply nfa-concat (map dfa->nfa (cons dfaA (cons dfaB rest))))))
     (nfa->dfa nfaC)))
 
 ;; ;; Concatenate two dfas.
@@ -169,28 +167,26 @@
      alphabet)))
 	 
 
-(define (dfa-inverse dfaA)
+(define (dfa-complement dfaA)
   (let* ((cdfa (dfa-complete dfaA))
-	 (states (nub (append
-		       (map first (dfa-transition-list cdfa))
-		       (map third (dfa-transition-list cdfa))))))
-    ; swap final and non final states
-    (let loop ((states states)
-	       (new-final (list)))
-      (if (not (null? states))
-	  (if (not (member (car states)
-			   (dfa-final-states cdfa)))
-	      (loop (cdr states) (cons (car states) new-final))
-	      (loop (cdr states) new-final))
-	  ; build the new dfa and return it
-	  (dfa-rename-states
-	   (dfa (dfa-start-state cdfa)
-		(dfa-transition-list cdfa)
-		new-final
-		(dfa-alphabet cdfa)))))))
+	 (states (dfa-states cdfa))
+	 ;; swap final and non final states
+	 (new-final (list-less states (dfa-final-states cdfa))))
+    ;; build the new dfa and return it
+    (print "---")
+    (print-dfa dfaA)
+    (print-dfa cdfa)
+    (print "---")
+    (dfa-rename-states
+     (dfa (dfa-start-state cdfa)
+	  (dfa-transition-list cdfa)
+	  new-final
+	  (dfa-alphabet cdfa)))))
 
 ;; Returns a dfa that is the intersection of dfaA and dfaB
 (define (dfa-intersection dfaA dfaB)
+  (print-dfa dfaA)
+  (print-dfa dfaB)
   (let* ((alphabet (union (dfa-alphabet dfaA)
 			  (dfa-alphabet dfaB)))
 	 (new-start (list (dfa-start-state dfaA)
@@ -217,18 +213,6 @@
 				(dfa-final-states dfaB))
 		 new-states)
 		alphabet))))))
-
-(define (dfa-less dfa1 dfa2)
-  (dfa-intersection dfa1 (dfa-inverse dfa2)))
-;;   (let* ((i (dfa-inverse dfa2))
-;; 	 (l (dfa-intersection dfa1 i)))
-;;     (print "inv")(read)
-;;     (show-graph (graph i))
-;;     (print "dfa1")(read)
-;;     (show-graph (graph dfa1))
-;;     (print "intersection")(read)
-;;     (show-graph (graph l))
-;;     l))
   
 ;; return a set of merged transtions for dfaA and dfaB
 ;; from stateA and stateB over all the symbols in alphabet
@@ -252,6 +236,19 @@
 		       new-transitions))))
 	  (else 
 	   new-transitions))))
+
+(define (dfa-less dfa1 dfa2)
+  (dfa-intersection dfa1 (dfa-complement dfa2)))
+;;   (let* ((i (dfa-complement dfa2))
+;; 	 (l (dfa-intersection dfa1 i)))
+;;     (print "inv")(read)
+;;     (show-graph (graph i))
+;;     (print "dfa1")(read)
+;;     (show-graph (graph dfa1))
+;;     (print "intersection")(read)
+;;     (show-graph (graph l))
+;;     l))
+
 
 (define (dfa-remove-unreachable-states! dfaA)  
   (let loop ((unreachable-states (%unreachable-states dfaA)))
@@ -399,9 +396,9 @@
 (print "should reject")
 (print (run-dfa test-dfa '( a b d e)))
 (print-dfa (dfa-complete test-dfa))
-(print-dfa (dfa-inverse test-dfa))
+(print-dfa (dfa-complement test-dfa))
 (print-dfa (dfa-complete test-dfa1))
-(print-dfa (dfa-inverse test-dfa1))
+(print-dfa (dfa-complement test-dfa1))
 ;(show-graph (graph test-dfa))
 (print-dfa (dfa-intersection (dfa-complete test-dfa) (dfa-complete test-dfaA)))
 (print-dfa (dfa-intersection test-dfa test-dfaA))

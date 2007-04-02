@@ -7,7 +7,7 @@
 	 (utils "utils.scm"))
 ; (main main-regex)
  (export (nfa-plus nfa1)
-	 (nfa-concat nfaA nfaB)
+	 (nfa-concat nfaA nfaB . rest)
 	 (nfa-star nfa1)
 	 (nfa-or nfaA nfaB)
 	 (nfa-for-one-symbol sym)
@@ -87,7 +87,17 @@
 	      ;; accepts a symbol
 	      (?sym (nfa-for-one-symbol sym))))
 
-(define (nfa-concat nfaA nfaB)
+(define (nfa-concat nfaA nfaB . rest)
+  (print nfaA nfaB rest)
+  (print-nfa (car rest))
+  (let loop ((result (%nfa-concat nfaA nfaB))
+	     (rest rest))
+    (cond ((null? rest) result)
+	  (else (loop 
+		 (%nfa-concat result (car rest))
+		 (cdr rest))))))
+		 
+(define (%nfa-concat nfaA nfaB)
   ;; build an nfa which accepts La.Lb, where La are strings accepted
   ;; by nfaA and Lb are strings accepted by nfaB
   (let* ((startA (nfa-start-state nfaA))
