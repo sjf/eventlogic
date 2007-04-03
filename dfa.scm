@@ -237,6 +237,49 @@
 	  (else 
 	   new-transitions))))
 
+(define (equivalent-states? dfa1 q1 q2)
+  (if (not (equal? (member q1 (dfa-final-states dfa1))
+		   (member q2 (dfa-final-states dfa2))))
+      #f
+      (let loop ((symbols (dfa-alphabet dfa1)))
+	(cond ((null? symbols)
+	       #t)
+	      ((not (equal? (dfa-trans dfa1 q1 (car symbols))
+			    (dfa-trans dfa1 q2 (car symbols))))
+	       #f)
+	      (else
+	       (loop (cdr symbols)))))))
+
+(define (dfa-minimize! dfa1)
+  (let loop0 ((states1 (dfa-states dfa1)))
+    (if (not (null? states1))
+	(let loop1 ((states2 (dfa-states dfa2)))
+	  (if (not (null? states2))
+	      (let ((state1 (car states1))
+		    (state2 (car states2)))
+		(if (and (not (equal? state1 state2))
+			 (equivalent? state1 state2))
+		    (rename-states! dfa1 state2 state1))
+		(loop1 (cdr states2))))
+	  (loop0 (cdr states2))))))
+
+
+(define (rename-states! dfa1 state1 state2)
+  (define (replace-state x)
+    (if (equal? x state1) state2 x))
+  (let ((new-trans (map 
+		    (lambda (trans) 
+		      (let ((q1 (replace-state (first trans)))
+			    (q2 (replace-state (third trans))))
+			(list q1 (second trans) q2)))
+		    (dfa-tranisition-list dfa1)))
+	(new-start (replace-state (dfa-start-state dfa1)))
+	(new-final (map replace-state (dfa-final-states dfa1))))
+    (dfa-transition-list-set! new-trans)
+    (dfa-start-state-set! new-start)
+    (dfa-final-states-set! new-final)))
+					
+
 (define (dfa-less dfa1 dfa2)
   (dfa-intersection dfa1 (dfa-complement dfa2)))
 ;;   (let* ((i (dfa-complement dfa2))
@@ -380,12 +423,14 @@
    '(d)))
 
 (define (main argv)
-  (print-dfa test-dfa)
-  (print-dfa test-dfa1)
-  (let ((c (dfa-concat test-dfa test-dfa1)))
-    (print-dfa c)
-    (show-graph (graph c)))
-  (exit)
+  (view
+
+;   (print-dfa test-dfa)
+;   (print-dfa test-dfa1)
+;   (let ((c (dfa-concat test-dfa test-dfa1)))
+;     (print-dfa c)
+;     (show-graph (graph c)))
+;   (exit)
 
 ;  (show-graph (graph test-dfa2))
 ;  (show-graph (graph (dfa-remove-unreachable-states! test-dfa2)))
