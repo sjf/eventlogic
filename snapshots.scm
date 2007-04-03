@@ -70,26 +70,31 @@
 
 ;; Return the dfa that is the superposition of dfa1 and dfa2
 (define (superposition dfa1 dfa2)
-  (let* ((start-state (list (dfa-start-state dfa1) (dfa-start-state dfa2)))
-	 (final-states (cross-product (dfa-final-states dfa1) (dfa-final-states dfa2)))
+  (let* ((new-start (list (dfa-start-state dfa1) (dfa-start-state dfa2)))
+	 (new-final (cross-product (dfa-final-states dfa1) (dfa-final-states dfa2)))
 	 (trans1 (dfa-transition-list dfa1))
 	 (trans2 (dfa-transition-list dfa2))
-	 (new-trans (nub (map (lambda (pair) (apply superpos-transition pair))
-			 (cross-product trans1 trans2))))
+	 (new-trans (nub 
+		     (map (lambda (pair) (apply superpos-transition pair))
+			  (cross-product trans1 trans2))))
 	 ;; TODO: this isn't really correct
 	 ;; it should be powerset(phi(dfa1) union phi(dfa2))
-	 (new-alphabet (dfa-alphabet dfa1)))
-    (map print trans1)
-    (map print trans2)
-    (map print new-trans)
-    (dfa-rename-states
-     (dfa-remove-unreachable-states!
-      (dfa
-       start-state
-       new-trans
-       final-states
-       new-alphabet)))))
+	 (new-alphabet (dfa-alphabet dfa1))
+	 (dfa-new (dfa-rename-states 
+		   (dfa new-start
+			new-trans
+			new-final
+			new-alphabet))))
+    (dfa-minimize! dfa-new)
+    
+    dfa-new))
+;     (map print trans1)
+;     (map print trans2)
+;     (map print new-trans)
 
+
+;; The subsumptive closure, L |>=, is
+;; the same as L&E*
 (define (subsumptive-closure dfaA)
   (superposition dfaA (dfa-universal (dfa-alphabet dfaA))))
 
@@ -103,10 +108,18 @@
 	 (temp 
 	  (dfa-concat (dfa-universal alphabet)
 		      intersec
-		      (dfa-universal alphabet))))
-    (map (lambda (d) (write "*") (read) (show-graph (graph d)))
-	 (list s-closure-A s-closure-B s-closure-B-inv intersec temp))
-    (dfa-complement temp)))
+		      (dfa-universal alphabet)))
+	 (result (dfa-complement temp)))
+    (print "****")
+    (print-dfa temp)
+    (print-dfa result)
+    (print "****")
+    (view (graph temp))
+    (view (graph result))
+    result))	 
+ ;   (map (lambda (d) (write "*") (read) (view (graph d)))
+;	 (list s-closure-A s-closure-B s-closure-B-inv intersec temp))
+
 
 ;; the empty snapshot: []
 (define empty-snapshot (list))
@@ -131,8 +144,9 @@
 
 (define (main-snapshots argv)
   (let ((c (constraint A B)))
-    (map print-dfa (list A B c))
-    (show-graph (graph c))))
+    '()))
+    ;(map print-dfa (list A B c))))
+;    (view (graph c))))
 ;;   (if (> (length argv) 1)
 ;;       (begin
 ;; 	(print (str->snapshot-seq (string-join (cdr argv) " ")))

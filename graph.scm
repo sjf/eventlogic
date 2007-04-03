@@ -11,9 +11,11 @@
 	 (dfa "dfa.scm")
 	 (utils "utils.scm"))
 	(export 
-	 (show-graph graph)
+	 (view graph)
 	 (graph state-machine)
 	 (graph-to-file state-machine file)))
+
+(define *image-viewer* "eog")
 
 (define (graph state-machine)
   (cond ((nfa? state-machine)
@@ -94,7 +96,7 @@
 
 ;; Generate a png from the graph
 ;; using dot. Display the graph using eog.
-(define (show-graph graph)
+(define (view graph)
   (let* ((tempfile (temp-filename))
 	 (proc (run-process "dot" "-Tpng" "-o" tempfile :input :pipe))
 	 (proc-input (process-input-port proc)))
@@ -102,10 +104,10 @@
     (flush-output-port proc-input)
     (close-output-port proc-input)
     (process-wait proc)
-    (run-process "eog" tempfile)))
+    (run-process *image-viewer* tempfile)))
 
 (define (main-graph argv)
-  (show-graph (graph test-dfa1))
+  (view (graph test-dfa1))
   (print (graph test-dfa1))
   ;(print (graph test-nfa3))
   ;(show-graph (graph test-dfa1))

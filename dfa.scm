@@ -17,6 +17,7 @@
     (dfa-intersection dfaA dfaB)
     (dfa-less dfaA dfaB)
     (dfa-states dfaA)
+    (dfa-minimize! dfaA)
     (dfa-remove-unreachable-states! dfaA)
     (dfa-rename-states dfaA)
     test-dfa
@@ -72,6 +73,8 @@
 	    (else
 	     (%run-dfa next-state dfa (cdr input))))))))
 
+;; Convert a dfa to an nfa, this doesn't really have to do anything
+;; except make a new nfa record.
 (define (dfa->nfa dfaA)
   (nfa (dfa-alphabet dfaA)
        (dfa-states dfaA)
@@ -85,40 +88,6 @@
   (let* ((nfaC (apply nfa-concat (map dfa->nfa (cons dfaA (cons dfaB rest))))))
     (nfa->dfa nfaC)))
 
-;; ;; Concatenate two dfas.
-;; ;; The start state of B becomes the final state of dfaA.
-;; ;; Replace each reference to the start state of dfaB
-;; ;; with a references to the final states of dfaA.
-;; (define (dfa-concat dfaA dfaB)
-;;   (let* ((qfinal-A (dfa-final-states dfaA))
-;; 	 (qfinal-B (dfa-final-states dfaB))
-;; 	 (q0-B (dfa-start-state dfaB))
-;; 	 (new-start (dfa-start-state dfaA))
-;; 	 (new-final (if (member q0-B qfinal-B)
-;; 			;; replace q0-B with the set qfinal-A
-;; 			(append (remq q0-B qfinal-B)
-;; 				qfinal-A)
-;; 			qfinal-B))
-;; 	 (new-trans-B (flatten 
-;; 		       (map (lambda (qfinal)
-;; 			      (map (lambda (trans)
-;; 				     (let ((qA (if (equal? (first trans) q0-B)
-;; 						   qfinal (first trans)))
-;; 					   (qB (if (equal? (third trans) q0-B)
-;; 						   qfinal (third trans))))
-;; 				       (list qA (second trans) qB)))
-;; 				   (dfa-transition-list dfaB)))
-;; 			   qfinal-A)))
-;; 	 (new-trans (append (dfa-transition-list dfaA) new-trans-B))
-;; 	 (new-alphabet (union (dfa-alphabet dfaA) (dfa-alphabet dfaB))))
-;;     (print new-trans)
-;; ;  (dfa-rename-states 
-;;    (dfa 
-;;     new-start
-;;     new-trans
-;;     new-final
-;;     new-alphabet)))
-
 ;; A complete dfa has transitions out of every state for every symbol
 ;; in the language.
 ;; This will add in the necessary extra transitions, which will go
@@ -126,34 +95,32 @@
 (define (dfa-complete dfaA)
   (define transitions (dfa-transition-list dfaA))
   (define sink-state (gensym "sink"))
-  (let loop0 ((states (cons sink-state
-			    (nub (append 
-				  (map first (dfa-transition-list dfaA))
-				  (map third (dfa-transition-list dfaA)))))))
-;    (print states)
-    (cond ((not (null? states))
-	   (let loop1 ((alphabet (dfa-alphabet dfaA)))
-	     ;(print alphabet)
-	     (cond ((not (null? alphabet))
-		   ; (print (car states) " " (car alphabet) "  "
-			;   ((dfa-transition dfaA) (car states) (car alphabet)))
-		    (if (equal? (dfa-trans dfaA (car states) (car alphabet)) #f)
-			; There is no transition for this state and symbol
-			; So add a transition to the sink state
-			(set! transitions
-			      (cons (list (car states)
-					  (car alphabet)
-					  sink-state)
-				    transitions)))
-		    (loop1 (cdr alphabet)))))
-	   (loop0 (cdr states)))
-	  (else
-	   (dfa-rename-states 
-	    (dfa (dfa-start-state dfaA)
-		 transitions
-		 (dfa-final-states dfaA)
-		 (dfa-alphabet dfaA)))))))
+  ;; Check if is complete beforehand
+  (cond ((is-complete? dfaA) dfaA)
+	(else (map (lambda (state)
+		     (map (lambda (symbol) 
+			    (if (equal? (dfa-trans dfaA state symbol) #f)
+				;; Add a transition to the sink state
+				(set! transitions
+				      (cons (list state symbol sink-state)
+					    transitions))))
+			  (dfa-alphabet dfaA)))
+		     (cons sink-state (dfa-states dfaA)))
+	      (dfa-rename-states
+	       (dfa (dfa-start-state dfaA)
+		    transitions
+		    (dfa-final-states dfaA)
+		    (dfa-alphabet dfaA))))))
+    
+(define (is-complete? dfaA)
+  (let loop ((states (dfa-states dfaA))
+	      (alphabet (dfa-alphabet dfaA)))
+    (cond ((null? states) #t)
+	  ((null? alphabet) (loop (cdr states) (dfa-alphabet dfaA)))
+	  ((equal? #f (dfa-trans dfaA (car states) (car alphabet))) #f)
+	  (else (loop states (cdr alphabet))))))
 
+;; Returns the dfa for the universal language, eg. E*
 (define (dfa-universal alphabet)
   (let* ((q0 (gensym "q"))
 	 (trans (map 
@@ -183,10 +150,24 @@
 	  new-final
 	  (dfa-alphabet cdfa)))))
 
+
+(define (dfa-less dfa1 dfa2)
+  (dfa-intersection dfa1 (dfa-complement dfa2)))
+;;   (let* ((i (dfa-complement dfa2))
+;; 	 (l (dfa-intersection dfa1 i)))
+;;     (print "inv")(read)
+;;     (show-graph (graph i))
+;;     (print "dfa1")(read)
+;;     (show-graph (graph dfa1))
+;;     (print "intersection")(read)
+;;     (show-graph (graph l))
+;;     l))
+
+
 ;; Returns a dfa that is the intersection of dfaA and dfaB
 (define (dfa-intersection dfaA dfaB)
-  (print-dfa dfaA)
-  (print-dfa dfaB)
+;  (print-dfa dfaA)
+;  (print-dfa dfaB)
   (let* ((alphabet (union (dfa-alphabet dfaA)
 			  (dfa-alphabet dfaB)))
 	 (new-start (list (dfa-start-state dfaA)
@@ -237,9 +218,35 @@
 	  (else 
 	   new-transitions))))
 
+(define (dfa-minimize! dfa1)
+  (dfa-remove-unreachable-states! dfa1)
+  (%dfa-minimize! dfa1))
+
+;; Minimise a dfa
+;; Find the states that are equivalent and merge them
+(define (%dfa-minimize! dfa1)
+  (let loop0 ((states1 (dfa-states dfa1)))
+    (if (not (null? states1))
+	(let loop1 ((states2 (dfa-states dfa1)))
+	  (if (not (null? states2))
+	      (let ((state1 (car states1))
+		    (state2 (car states2)))
+		(if (and (not (equal? state1 state2))
+			 (equivalent-states? dfa1 state1 state2))
+		    (rename-states! dfa1 state2 state1))
+		(loop1 (cdr states2))))
+	  (loop0 (cdr states1))))))
+
+
+
+;; Returns true if q1 and q2 are equivalent states.
+;; Two states in a dfa are equivalent if
+;; for every symbol in the alphabet they go the 
+;; next state. They must also both be either final or not
+;; final.
 (define (equivalent-states? dfa1 q1 q2)
   (if (not (equal? (member q1 (dfa-final-states dfa1))
-		   (member q2 (dfa-final-states dfa2))))
+		   (member q2 (dfa-final-states dfa1))))
       #f
       (let loop ((symbols (dfa-alphabet dfa1)))
 	(cond ((null? symbols)
@@ -250,48 +257,28 @@
 	      (else
 	       (loop (cdr symbols)))))))
 
-(define (dfa-minimize! dfa1)
-  (let loop0 ((states1 (dfa-states dfa1)))
-    (if (not (null? states1))
-	(let loop1 ((states2 (dfa-states dfa2)))
-	  (if (not (null? states2))
-	      (let ((state1 (car states1))
-		    (state2 (car states2)))
-		(if (and (not (equal? state1 state2))
-			 (equivalent? state1 state2))
-		    (rename-states! dfa1 state2 state1))
-		(loop1 (cdr states2))))
-	  (loop0 (cdr states2))))))
-
-
+;; Takes a dfa and renames all occurrences of state1 to state2
 (define (rename-states! dfa1 state1 state2)
   (define (replace-state x)
     (if (equal? x state1) state2 x))
-  (let ((new-trans (map 
-		    (lambda (trans) 
-		      (let ((q1 (replace-state (first trans)))
-			    (q2 (replace-state (third trans))))
-			(list q1 (second trans) q2)))
-		    (dfa-tranisition-list dfa1)))
-	(new-start (replace-state (dfa-start-state dfa1)))
-	(new-final (map replace-state (dfa-final-states dfa1))))
-    (dfa-transition-list-set! new-trans)
-    (dfa-start-state-set! new-start)
-    (dfa-final-states-set! new-final)))
-					
-
-(define (dfa-less dfa1 dfa2)
-  (dfa-intersection dfa1 (dfa-complement dfa2)))
-;;   (let* ((i (dfa-complement dfa2))
-;; 	 (l (dfa-intersection dfa1 i)))
-;;     (print "inv")(read)
-;;     (show-graph (graph i))
-;;     (print "dfa1")(read)
-;;     (show-graph (graph dfa1))
-;;     (print "intersection")(read)
-;;     (show-graph (graph l))
-;;     l))
-
+  (let 	((new-start (replace-state (dfa-start-state dfa1)))
+	 (new-final (map replace-state (dfa-final-states dfa1))))
+    (dfa-start-state-set! dfa1 new-start)
+    (dfa-final-states-set! dfa1 new-final)
+    ;; Replace all references to state1 in the list of transitions
+    (let loop ((transitions (dfa-transition-list dfa1))
+	       (new-trans (list)))
+      (if (not (null? transitions))
+	  (let* ((trans (car transitions))
+		 (q1 (replace-state (first trans)))
+		 (q2 (replace-state (third trans)))
+		 (n-trans (list q1 (second trans) q2)))
+	    ;; avoid duplicate transitions
+	    (if (equal? (first trans) state1)
+		(loop (cdr transitions) new-trans)
+		(loop (cdr transitions) (cons n-trans new-trans))))
+	  (dfa-transition-list-set! dfa1 new-trans)))))
+	  
 
 (define (dfa-remove-unreachable-states! dfaA)  
   (let loop ((unreachable-states (%unreachable-states dfaA)))
@@ -422,8 +409,30 @@
    '(qA)
    '(d)))
 
+(define test-dfa-m
+  (dfa 
+   'q0
+   '((q0 a q1)
+     (q0 b q2)
+     (q1 a q3)
+     (q1 b q4)
+     (q2 a q4)
+     (q2 b q3)
+     (q3 a q5)
+     (q3 b q5)
+     (q4 a q5)
+     (q4 b q5)
+     (q5 a q5)
+     (q5 b q5))
+   '(q5)
+   '(a b)))
+
 (define (main argv)
-  (view
+  (view (graph test-dfa-m))
+  (dfa-minimize! test-dfa-m)
+  (view (graph test-dfa-m))
+  
+  (exit)
 
 ;   (print-dfa test-dfa)
 ;   (print-dfa test-dfa1)
