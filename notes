@@ -1,0 +1,11 @@
+How to install lalr parser
+$ chicken-setup lalr
+(Need write permission on /usr/lib/chicken)
+
+$ chicken-setup silex
+
+dot:
+dot -Tps -o out.ps  file.dot
+gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dGraphicsAlphaBits=4 \
+   -sDEVICE=png16m -sOutputFile=out.png out.ps
+

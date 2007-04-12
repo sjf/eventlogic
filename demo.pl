@@ -43,6 +43,8 @@ sub print_results {
     my $events = shift;
     my $scene = shift;
     my $fh;
+    print h3('Results');
+    print "<pre>";
     open($fh, "| ./demo |") or print "Couldn't run demo: $!";
     print $fh $events;
     print $fh $scene;
@@ -50,6 +52,7 @@ sub print_results {
 	$/ = undef;
 	print <$fh>;
     }
+    print "</pre>";
 }
 
 print header;

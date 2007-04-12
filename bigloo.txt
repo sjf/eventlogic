@@ -1,0 +1,34 @@
+Scheme is functional programming language. It is a dialect of lisp widely used in academia and in teaching. It is tail recursive, uses lexical scoping and supports lexical closures and continuations as first class objects. The current Scheme standard is R5RS\cite{R5RS}.
+
+Scheme is a small language, with very little syntax and a small complement of primitive functions and definitions.*  This has the benefits of having a standard core language, making it easier to read Scheme code. However a lot of the day to day to features of the language are left out of the standard, (for example a module system, threading libraries, etc) It is left up to the compiler developer to choose how to implement them. This leads to various incompatible versions, tying code using the features to a particular compiler.
+
+One of the nice features of Scheme, and the reason I chose it for my project is that is tail recursive. Tail recursion is a compiler optimisation for recursive functions that avoids the problem of running out of stack space for deeply nested functions. Tail recursion can be applied to functions where the last operation is a recursive call to itself. It works because it is not necessary to push on a stack frame for every recursive call, the current stack frame can be reused by the recursive call.
+Tail recursion is attractive because it allows the inductive definition of a solution to a problem to correspond naturally to its implementation as recursive function.
+
+Bigloo Scheme
+
+Bigloo is an implementation of Scheme written by Manuel Serrano at INRIA\cite{serrano95bigloo}. Bigloo was originally designed to have fronts ends for both Scheme and ML. It has backends which compile to C, JVM, and .NET bytecode making it highly portable and allowing access to the Java and .NET libraries and easy interoperability with Java and C#.
+
+Bigloo comes with a large selection of standard libraries, of particular interest are a LALR parser distributed as part of the standard install. 
+
+
+* The entire Scheme standard is smaller than the introduction to the Lisp Hyperspec.
+
+@article{R5RS,
+    author = "Richard Kelsey and William Clinger and Jonathan Rees (Editors)",
+    title = "Revised$^{5}$ Report on the Algorithmic Language {Scheme}",
+    journal = "ACM SIGPLAN Notices",
+    volume = "33",
+    number = "9",
+    pages = "26--76",
+    year = "1998",
+    url = "citeseer.ist.psu.edu/kelsey98revised.html" }
+
+@inproceedings{ serrano95bigloo,
+    author = "Manuel Serrano and Pierre Weis",
+    title = "Bigloo: A Portable and Optimizing Compiler for Strict Functional Languages",
+    booktitle = "Static Analysis Symposium",
+    pages = "366-381",
+    year = "1995",
+    url = "citeseer.ist.psu.edu/serrano95bigloo.html" 
+}
