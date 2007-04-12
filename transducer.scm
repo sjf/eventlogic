@@ -9,4 +9,5 @@
          (graph "graph.scm")
          (snapshots "snapshots.scm")))
 
-(define (
+(define (transducer-main)
+  (trans
