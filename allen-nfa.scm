@@ -29,23 +29,23 @@
 ;; These functions return a dfa 
 ;; for each of the 13 allen relations.
 ;; They take two nfas as arguments and return
-;; the dfa that accept when two strings from the
+;; the nfa that accept when two strings from the
 ;; nfas occur in that relation to each other.
 
 (define (equal nfa1 nfa2)
   ;   L1
   ; & L2
-  (superposition (nfa->dfa nfa1) (nfa->dfa nfa2)))
+  (dfa->nfa (superposition (nfa->dfa nfa1) (nfa->dfa nfa2)))
 
 (define (before nfa1 nfa2)
   ; L1.[]+.L2
-  (nfa->dfa (nfa-concat nfa1 (nfa-concat (nfa-empty-plus) nfa2))))
+  (nfa-concat nfa1 (nfa-concat (nfa-empty-plus) nfa2)))
 
 (define (after nfa1 nfa2) (before nfa2 nfa1))
 
 (define (meets nfa1 nfa2)
   ; L1.L2
-  (nfa->dfa (nfa-concat nfa1 nfa2)))
+  (nfa-concat nfa1 nfa2))
 (define (met-by nfa1 nfa2) (meets nfa2 nfa1))
 
 (define (overlaps nfa1 nfa2)
@@ -53,17 +53,17 @@
   ; & []+ L2-----   less  L1.L2  less L1.[]+.L2
   (let* ((nfaA (nfa-concat nfa1 (nfa-empty-plus)))
 	 (nfaB (nfa-concat (nfa-empty-plus) nfa2))
-	 (superposAB (superposition (nfa->dfa nfaA) (nfa->dfa nfaB)))
-	 (meet-dfa (meets nfa1 nfa2))
-	 (before-dfa (before nfa1 nfa2))
-	 (dfa1 (dfa-less superposAB before-dfa))
+	 (superposAB-dfa (superposition (nfa->dfa nfaA) (nfa->dfa nfaB)))
+	 (meet-dfa (nfa->dfa (meets nfa1 nfa2)))
+	 (before-dfa (nfa->dfa (before nfa1 nfa2)))
+	 (dfa1 (dfa-less superposAB-dfa before-dfa))
 	 (dfa2 (dfa-less dfa1 meet-dfa)))
 ;       (show-graph (graph superposAB))(read)
 ;       (show-graph (graph meet-dfa))(read)
 ;       (show-graph (graph before-dfa))(read)
 ;       (show-graph (graph dfa1))(read)
 ;       (show-graph (graph dfa2))(read)
-       dfa2))
+       (dfa->nfa dfa2)))
 
 
 (define (overlapped-by nfa1 nfa2) (overlaps nfa2 nfa1))
@@ -74,7 +74,7 @@
   ; & []+-L2-[]+ 
   (let* ((nfa3 (nfa-concat (nfa-empty-plus)
 			   (nfa-concat nfa2 (nfa-empty-plus)))))
-    (superposition (nfa->dfa nfa1) (nfa->dfa nfa3))))
+    (dfa->nfa (superposition (nfa->dfa nfa1) (nfa->dfa nfa3)))))
 	 
 
 (define (during nfa1 nfa2) (contains nfa2 nfa1))
@@ -82,13 +82,13 @@
 (define (starts nfa1 nfa2)
   ;   L1-- []+
   ; & L2------
-  (superposition (nfa->dfa (nfa-concat nfa1 (nfa-empty-plus))) (nfa->dfa nfa2)))
+  (dfa->nfa (superposition (nfa->dfa (nfa-concat nfa1 (nfa-empty-plus))) (nfa->dfa nfa2))))
 (define (started-by nfa1 nfa2) (starts nfa2 nfa1))
 
 (define (ends nfa1 nfa2)
   ;   []+ --L1
   ; & L2------
-  (superposition (nfa->dfa (nfa-concat (nfa-empty-plus) nfa1)) (nfa->dfa nfa2)))
+  (dfa->nfa (superposition (nfa->dfa (nfa-concat (nfa-empty-plus) nfa1)) (nfa->dfa nfa2))))
 (define (ended-by nfa1 nfa2) (ends nfa2 nfa1))
 
 

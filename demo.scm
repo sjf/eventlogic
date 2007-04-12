@@ -5,7 +5,8 @@
 	 (eventlogic "eventlogic.scm")))
 
 (define (main args)
-  ((let* ((events (read))
+  ((let* ((primtive-events (read))
+	  (event-formulas (read))
 	  (scene-desc (read))
 	  (events-trans (events->transducer events))
 	  (scene-list (scene-desc->list scene-desc))
