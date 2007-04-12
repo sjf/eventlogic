@@ -1,4 +1,8 @@
 OPTIONS = -g4
+demo: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.o demo.scm
+	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.o demo.scm -o demo
+eventlogic: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.scm
+	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.scm -o eventlogic
 allen-nfa: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.scm 
 	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.scm -o allen-nfa
 # nfa: dfa.o utils.o nfa.scm
@@ -23,6 +27,10 @@ graph.o: graph.scm
 	bigloo $(OPTIONS) -c graph.scm
 regex.o: regex.scm
 	bigloo $(OPTIONS) -c regex.scm 
+allen-nfa.o: allen-nfa.scm
+	bigloo $(OPTIONS) -c allen-nfa.scm
+eventlogic.o: eventlogic.scm
+	bigloo $(OPTIONS) -c eventlogic.scm
 clean:
 	rm -f *.o
 make:
