@@ -1,6 +1,7 @@
 ;; allen relations on regular languages using superposition
 (module
  allen-nfa
+; (main main-allen)
  (include "nfa.sch")
  (include "dfa.sch")
  (import (dfa "dfa.scm")
@@ -22,8 +23,8 @@
   (starts a b)
   (started-by a b)
   (ends a b)
-  (ended-by a b))
- (main main-allen))
+  (ended-by a b)))
+
  
 
 ;; These functions return a dfa 
@@ -35,7 +36,7 @@
 (define (equal nfa1 nfa2)
   ;   L1
   ; & L2
-  (dfa->nfa (superposition (nfa->dfa nfa1) (nfa->dfa nfa2)))
+  (dfa->nfa (superposition (nfa->dfa nfa1) (nfa->dfa nfa2))))
 
 (define (before nfa1 nfa2)
   ; L1.[]+.L2

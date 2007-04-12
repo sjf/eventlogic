@@ -7,7 +7,7 @@
 	 (utils "utils.scm")
 	 (regex "regex.scm")
 	 (graph "graph.scm"))
- (main main-snapshots)
+; (main main-snapshots)
  (export (str->snapshot-seq str)
 	 empty-snapshot
 	 (nfa-empty-plus)

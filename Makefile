@@ -1,8 +1,8 @@
 OPTIONS = -g4
 demo: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.o demo.scm
-	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.o demo.scm -o demo
+	bigloo $(OPTIONS) $^ -o $@
 eventlogic: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.scm
-	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.scm -o eventlogic
+	bigloo $(OPTIONS) -o $@ $^
 allen-nfa: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.scm 
 	bigloo $(OPTIONS) dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.scm -o allen-nfa
 # nfa: dfa.o utils.o nfa.scm
@@ -16,21 +16,21 @@ dfa: graph.o utils.o nfa.o regex.o dfa.scm
 snapshots: dfa.o utils.o nfa.o regex.o graph.o snapshots.scm
 	bigloo $(OPTIONS) snapshots.scm dfa.o nfa.o utils.o regex.o graph.o -o snapshots
 nfa.o:  nfa.scm
-	bigloo $(OPTIONS) -c nfa.scm
+	bigloo $(OPTIONS) -c $^
 dfa.o: dfa.scm
-	bigloo $(OPTIONS) -c dfa.scm
+	bigloo $(OPTIONS) -c $^
 utils.o: utils.scm
-	bigloo $(OPTIONS) -c utils.scm
+	bigloo $(OPTIONS) -c $^
 snapshots.o: snapshots.scm
-	bigloo $(OPTIONS) -c snapshots.scm
+	bigloo $(OPTIONS) -c $^
 graph.o: graph.scm
-	bigloo $(OPTIONS) -c graph.scm
+	bigloo $(OPTIONS) -c $^
 regex.o: regex.scm
-	bigloo $(OPTIONS) -c regex.scm 
+	bigloo $(OPTIONS) -c $^
 allen-nfa.o: allen-nfa.scm
-	bigloo $(OPTIONS) -c allen-nfa.scm
+	bigloo $(OPTIONS) -c $^
 eventlogic.o: eventlogic.scm
-	bigloo $(OPTIONS) -c eventlogic.scm
+	bigloo $(OPTIONS) -c $^
 clean:
 	rm -f *.o
 make:

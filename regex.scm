@@ -89,7 +89,7 @@
 
 (define (nfa-concat nfaA nfaB . rest)
   (print nfaA nfaB rest)
-  (print-nfa (car rest))
+  ;(print-nfa (car rest))
   (let loop ((result (%nfa-concat nfaA nfaB))
 	     (rest rest))
     (cond ((null? rest) result)

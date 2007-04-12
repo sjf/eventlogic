@@ -22,6 +22,7 @@
     (string-join l s)
     (to-string a)
     (temp-filename)
+    (panic str)
 ))
 (define (identity x) x)
 
@@ -204,4 +205,6 @@
 ;;      (lambda (exit-status)
 ;;        (delete-file filename)))
     filename))
-    
+ 
+(define (panic str)
+  (error "" str ""))
