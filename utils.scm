@@ -23,6 +23,7 @@
     (to-string a)
     (temp-filename)
     (panic str)
+    (dump-trace)
 ))
 
 (define (identity x) x)
@@ -219,3 +220,5 @@
  
 (define (panic str)
   (error "" str ""))
+(define (dump-trace)
+  (dump-trace-stack (current-output-port) 1024))

@@ -1,10 +1,11 @@
-(module ex
-   (library srfi-1))
-(define l '(1 2 3))
-(define l2 '(b o b))
-(print l)
-(print l2)
-(append! l l2)
-(print l)
-(set-cdr! (cdr l2) '(x y z))
-(print l)
+(module ex)
+(with-trace 0 'bob 
+	    (define l '(1 2 3))
+	    (define l2 '(b o b))
+	    (print l)
+	    (print l2)
+	    (let loop ((c 0))
+	      (print c)
+	      (if (< c 5)
+		  (loop (+ c 1)))))
+

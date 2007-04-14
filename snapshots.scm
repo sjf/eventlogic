@@ -13,6 +13,7 @@
 	 (nfa-empty-plus)
 	 (nfa-empty)
 	 (union-fluent-alphabets a1 a2)
+	 (sort-fluents l)
 	 (superposition a b)))
 
 
@@ -64,10 +65,7 @@
     (list (list qc1 qc2) (union-snapshot sym1 sym2) (list qn1 qn2))))
 
 (define (union-snapshot snapshot1 snapshot2)
-  (sort (union snapshot1 snapshot2) (lambda (a b)
-					(string<?
-					 (if (symbol? a) (symbol->string a) a)
-					 (if (symbol? b) (symbol->string b) b)))))
+  (sort-fluents (union snapshot1 snapshot2)))
 					
 
 ;; Return the dfa that is the superposition of dfa1 and dfa2
@@ -87,8 +85,8 @@
 			new-trans
 			new-final
 			new-alphabet))))
-    (dfa-minimize! dfa-new)
-    
+    (dfa-remove-unreachable-states! dfa1)
+    ;(dfa-minimize! dfa-new)    
     dfa-new))
 ;     (map print trans1)
 ;     (map print trans2)
@@ -141,7 +139,13 @@
 	 (fluents2 (nub (flatten alphabet2)))
 	 (new-alphabet (powerset (union fluents1 fluents2))))
     new-alphabet))
-
+       
+(define (sort-fluents l)
+  (sort l
+	(lambda (a b)
+	  (string<?
+	   (if (symbol? a) (symbol->string a) a)
+	   (if (symbol? b) (symbol->string b) b)))))
 
 (define A
   (dfa 

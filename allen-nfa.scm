@@ -35,6 +35,7 @@
     (,started-by started-by) (,ends ends) (,ended-by ended-by)))
 
 (define (allen relation a b)
+  (dump-trace)
   ;; get the procedure for this allen relation
   ;; and the create the nfa for it
   (let ((r (find-if (lambda (p) 
@@ -73,12 +74,20 @@
   ;   L1----- []+
   ; & []+ L2-----   less  L1.[]*.L2
   (let* ((nfaA (nfa-concat nfa1 (nfa-empty-plus)))
+	 (d1 (p))
 	 (nfaB (nfa-concat (nfa-empty-plus) nfa2))
+	 (d2 (p))
 	 (dfaA (nfa->dfa nfaA))
+	 (d3 (p))
 	 (dfaB (nfa->dfa nfaB))
+	 (d4 (p))
 	 (superposAB-dfa (superposition dfaA dfaB))
+	 (d5 (p))
 	 (not-overlapped-dfa (nfa->dfa (nfa-concat nfa1 (nfa-star (nfa-empty)) nfa2)))
-	 (result-dfa (dfa-less superposAB-dfa not-overlapped-dfa)))
+	 (d6 (and (p) (print "dfa lessing ..")))
+	 (result-dfa (dfa-less superposAB-dfa not-overlapped-dfa))
+	 (d7 (and (p) (print "nfa->dfa"))))
+	 
     (dfa->nfa result-dfa)))
 (define (overlapped-by nfa1 nfa2) (overlaps nfa2 nfa1))
 

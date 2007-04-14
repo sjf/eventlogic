@@ -1,4 +1,5 @@
-OPTIONS = -g4
+OPTIONS = -g4 
+#-pg -p2 
 demo: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.o demo.scm
 	bigloo $(OPTIONS) $^ -o $@
 eventlogic: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.scm
@@ -31,6 +32,8 @@ allen-nfa.o: allen-nfa.scm
 	bigloo $(OPTIONS) -c $^
 eventlogic.o: eventlogic.scm
 	bigloo $(OPTIONS) -c $^
+test: test.scm
+	bigloo $(OPTIONS) $^ -o $@
 clean:
 	rm -f *.o
 make:

@@ -142,10 +142,10 @@
 	 ;; swap final and non final states
 	 (new-final (list-less states (dfa-final-states cdfa))))
     ;; build the new dfa and return it
-    (print "---")
-    (print-dfa dfaA)
-    (print-dfa cdfa)
-    (print "---")
+;;     (print "---")
+;;     (print-dfa dfaA)
+;;     (print-dfa cdfa)
+;;     (print "---")
     (dfa-rename-states
      (dfa (dfa-start-state cdfa)
 	  (dfa-transition-list cdfa)
@@ -170,6 +170,10 @@
 (define (dfa-intersection dfaA dfaB)
 ;  (print-dfa dfaA)
 ;  (print-dfa dfaB)
+  (print (length (dfa-transition-list dfaA)))
+  (print (length (dfa-transition-list dfaB)))
+  (print (length (dfa-alphabet dfaA)))
+  (print (length (dfa-alphabet dfaB)))
   (let* ((alphabet (union (dfa-alphabet dfaA)
 			  (dfa-alphabet dfaB)))
 	 (new-start (list (dfa-start-state dfaA)
