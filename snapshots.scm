@@ -11,6 +11,8 @@
  (export (str->snapshot-seq str)
 	 empty-snapshot
 	 (nfa-empty-plus)
+	 (nfa-empty)
+	 (union-fluent-alphabets a1 a2)
 	 (superposition a b)))
 
 
@@ -110,12 +112,12 @@
 		      intersec
 		      (dfa-universal alphabet)))
 	 (result (dfa-complement temp)))
-    (print "****")
-    (print-dfa temp)
-    (print-dfa result)
-    (print "****")
-    (view (graph temp))
-    (view (graph result))
+    ;(print "****")
+    ;(print-dfa temp)
+    ;(print-dfa result)
+    ;(print "****")
+    ;(view (graph temp))
+    ;(view (graph result))
     result))	 
  ;   (map (lambda (d) (write "*") (read) (view (graph d)))
 ;	 (list s-closure-A s-closure-B s-closure-B-inv intersec temp))
@@ -124,9 +126,22 @@
 ;; the empty snapshot: []
 (define empty-snapshot (list))
 
+(define (nfa-empty)
+  (nfa-for-one-symbol empty-snapshot))
+
 ;; an nfa which accepts []+
 (define (nfa-empty-plus)
-  (nfa-plus (nfa-for-one-symbol empty-snapshot)))
+  (nfa-plus (nfa-empty)))
+
+;; add a fluent to the set of fluents that
+;; make up the alphabet of a dfa.
+;; The fluents should really be stored in the dfas
+(define (union-fluent-alphabets alphabet1 alphabet2)
+  (let* ((fluents1 (nub (flatten alphabet1)))
+	 (fluents2 (nub (flatten alphabet2)))
+	 (new-alphabet (powerset (union fluents1 fluents2))))
+    new-alphabet))
+
 
 (define A
   (dfa 

@@ -11,6 +11,7 @@
 	 (graph "graph.scm")
 	 (snapshots "snapshots.scm"))
  (export 
+  (allen r a b)
   (equal a b)
   (before a b)
   (after a b)
@@ -25,7 +26,24 @@
   (ends a b)
   (ended-by a b)))
 
- 
+;; the relation procedures (unquoted) plus their names
+(define relations 
+  `((,equal equal) (,before before)
+    (,after after) (,meets meets) (,met-by met-by) 
+    (,overlaps overlaps) (,overlapped-by overlapped-by)
+    (,contains contains) (,during during) (,starts starts)    
+    (,started-by started-by) (,ends ends) (,ended-by ended-by)))
+
+(define (allen relation a b)
+  ;; get the procedure for this allen relation
+  ;; and the create the nfa for it
+  (let ((r (find-if (lambda (p) 
+		      (equal? (second p) relation)) relations)))
+    (if (equal? #f r)
+	(error "allen" "Is not an allen relation" relation)
+	; create the nfa
+	((first r) a b))))
+	
 
 ;; These functions return a dfa 
 ;; for each of the 13 allen relations.
@@ -49,30 +67,24 @@
   (nfa-concat nfa1 nfa2))
 (define (met-by nfa1 nfa2) (meets nfa2 nfa1))
 
+(define t 1)
+(define (p) (print t) (set! t (+ t 1)) #t)
 (define (overlaps nfa1 nfa2)
   ;   L1----- []+
-  ; & []+ L2-----   less  L1.L2  less L1.[]+.L2
+  ; & []+ L2-----   less  L1.[]*.L2
   (let* ((nfaA (nfa-concat nfa1 (nfa-empty-plus)))
 	 (nfaB (nfa-concat (nfa-empty-plus) nfa2))
-	 (superposAB-dfa (superposition (nfa->dfa nfaA) (nfa->dfa nfaB)))
-	 (meet-dfa (nfa->dfa (meets nfa1 nfa2)))
-	 (before-dfa (nfa->dfa (before nfa1 nfa2)))
-	 (dfa1 (dfa-less superposAB-dfa before-dfa))
-	 (dfa2 (dfa-less dfa1 meet-dfa)))
-;       (show-graph (graph superposAB))(read)
-;       (show-graph (graph meet-dfa))(read)
-;       (show-graph (graph before-dfa))(read)
-;       (show-graph (graph dfa1))(read)
-;       (show-graph (graph dfa2))(read)
-       (dfa->nfa dfa2)))
-
-
+	 (dfaA (nfa->dfa nfaA))
+	 (dfaB (nfa->dfa nfaB))
+	 (superposAB-dfa (superposition dfaA dfaB))
+	 (not-overlapped-dfa (nfa->dfa (nfa-concat nfa1 (nfa-star (nfa-empty)) nfa2)))
+	 (result-dfa (dfa-less superposAB-dfa not-overlapped-dfa)))
+    (dfa->nfa result-dfa)))
 (define (overlapped-by nfa1 nfa2) (overlaps nfa2 nfa1))
-;(define (overlapped-by nfa1 nfa2) nfa1)
 
 (define (contains nfa1 nfa2)
-  ;   ----L1----   
-  ; & []+-L2-[]+ 
+  ;;   ----L1----   
+  ;; & []+-L2-[]+ 
   (let* ((nfa3 (nfa-concat (nfa-empty-plus)
 			   (nfa-concat nfa2 (nfa-empty-plus)))))
     (dfa->nfa (superposition (nfa->dfa nfa1) (nfa->dfa nfa3)))))
@@ -81,25 +93,17 @@
 (define (during nfa1 nfa2) (contains nfa2 nfa1))
 
 (define (starts nfa1 nfa2)
-  ;   L1-- []+
-  ; & L2------
+  ;;   L1-- []+
+  ;; & L2------
   (dfa->nfa (superposition (nfa->dfa (nfa-concat nfa1 (nfa-empty-plus))) (nfa->dfa nfa2))))
 (define (started-by nfa1 nfa2) (starts nfa2 nfa1))
 
-(define (ends nfa1 nfa2)
-  ;   []+ --L1
-  ; & L2------
+(define (ends nfa1 nfa2)  
+  ;;   []+ --L1
+  ;; & L2------
   (dfa->nfa (superposition (nfa->dfa (nfa-concat (nfa-empty-plus) nfa1)) (nfa->dfa nfa2))))
 (define (ended-by nfa1 nfa2) (ends nfa2 nfa1))
 
-
-;; the relation procedures (unquoted) plus their names
-(define relations 
-  `((,equal equals) (,before before)
-    (,after after) (,meets meets) (,met-by met-by) 
-    (,overlaps overlaps) (,overlapped-by overlapped-by)
-    (,contains contains) (,during during) (,starts starts)    
-    (,started-by started-by) (,ends ends) (,ended-by ended-by)))
 
 (define (run-all-relations e1 e2 str)
   (run-relations e1 e2 str relations))
@@ -113,11 +117,11 @@
 
 (define (main-allen argv)
   ;do some tests
-;;   (let* ((r1 "[1].[2]")
-;; 	 (r2 "[2].[3]")
-;; 	 (str (str->snapshot-seq "[1][2][3][4]"))
-;; 	 (nfa1 (parse-tree->nfa (str->parse-tree r1)))
-;; 	 (nfa2 (parse-tree->nfa (str->parse-tree r2))))
+  ;;   (let* ((r1 "[1].[2]")
+  ;; 	 (r2 "[2].[3]")
+  ;; 	 (str (str->snapshot-seq "[1][2][3][4]"))
+  ;; 	 (nfa1 (parse-tree->nfa (str->parse-tree r1)))
+  ;; 	 (nfa2 (parse-tree->nfa (str->parse-tree r2))))
   (let ((fluentstr (read-line)) 
 	(l1 (read-line))
 	(l2 (read-line)))

@@ -6,8 +6,8 @@
     (third l)
     (compose f1 f2)
     (reduce f i l)
+    (maxf f l)
     (find-if p l)
-;;     (list-remove l item)
     (list-remove-all l item)
     (list-remove-if p item)
     (find-if-all p l)
@@ -24,6 +24,7 @@
     (temp-filename)
     (panic str)
 ))
+
 (define (identity x) x)
 
 ;; these are already defined by chicken
@@ -47,6 +48,16 @@
 		(if (null? l) 
 		    c
 		    (loop (cdr l) (f c (car l))))))))
+
+;; Return the element from the list
+;; that gives the largest value for f
+(define (maxf f l)
+  (reduce (lambda (x y)
+	    (if (> (f x) (f y))
+		x
+		y))
+	  '()
+	  l))
 
 ;; return the first item in l for which predicate p is true
 (define (find-if p l)

@@ -12,14 +12,15 @@
          (snapshots "snapshots.scm")))
 
 (define *default-and-relations* 
-  (list equal))
+  '(equal))
 (define *default-tense-relations* 
-  (list equal overlaps overlapped-by starts started-by ends ended-by during contains))
+  '(equal overlaps overlapped-by starts started-by ends ended-by during contains))
 (define *primitive-events* '(A B C D begin_i end_i))
 (define *alphabet* 
   (powerset *primitive-events*))
 
 (define (ev-primitive p)
+  ;; Primitive event types are liquid/homogenous
   ;; [p]+
   (if (not (member p *primitive-events*))
       (error "ev-primitive" "is not a primitive event type" p))
@@ -30,11 +31,11 @@
 
 (define (ev-and ev1 ev2 relations)
   ;; (and A B relations)
-  (let loop ((nfa1 ((car relations) ev1 ev2))
+  (let loop ((nfa1 (allen (car relations) ev1 ev2))
 	     (relations (cdr relations)))
     (if (not (null? relations))
 	(loop (nfa-or nfa1
-		      ((car relations) ev1 ev2))
+		      (allen (car relations) ev1 ev2))
 	      (cdr relations))
 	nfa1)))
 
@@ -43,20 +44,28 @@
   (nfa-or ev1 ev2))
 
 (define (tense-interval)
-  (nfa-concat
-   (nfa-for-one-symbol '(begin_i))
-   (nfa-empty-plus)
-   (nfa-for-one-symbol '(end_i))))
+  (let* ((interval (symbol->string (gensym "i")))
+	 (beg (string->symbol
+	       (string-append "begin_" interval)))
+	 (end (string->symbol
+	       (string-append "end_"  interval))))
+    (nfa-concat
+     (nfa-for-one-symbol (list beg))
+     (nfa-star (nfa-empty))
+     (nfa-for-one-symbol (list end)))))
 
 (define (ev-tense ev1 relations)
-  (let loop ((nfa1 ((car relations) ev1 (tense-interval)))
-	     (relations (cdr relations)))
-    (if (not (null? relations))
-	(and (print "bob") 
-	     (loop (nfa-or nfa1 
-			   ((car relations) ev1 (tense-interval)))
-		   (cdr relations)))
+  (let* ((interval (tense-interval))
+	 (nfa1 (allen (car relations) ev1 (tense-interval)))
+	 (new-alphabet (union-fluent-alphabets (nfa-alphabet nfa1) 
+					       (nfa-alphabet interval))))
+    (nfa-alphabet-set! nfa1 new-alphabet)
+    (print-nfa nfa1)
+    (print "---------------------")
+    (if (not (null? (cdr relations)))
+	(ev-tense nfa1 (cdr relations))
 	nfa1)))
+
 (define (dfa-consistent-universal-language)
   ;; TODO
   (dfa-universal *alphabet*))
@@ -95,9 +104,13 @@
 
 (define (eventlogic-main args)
   (let loop ()
+    (display "> ")
     (let* ((nfa1 (event-formula->nfa (read)))
 	  (dfa1 (nfa->dfa nfa1)))
       (print-nfa nfa1)
+      (print "*************************")
+      (print (maxf length (nfa-alphabet nfa1)))
+      (map print (nfa-alphabet nfa1))
       (view (graph dfa1))
       (loop))))
     

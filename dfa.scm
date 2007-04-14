@@ -31,7 +31,9 @@
 	     (dfa-start-state x))
     (map (lambda (t) (fprintf out "         ~a~%" t)) (dfa-transition-list x))
     (fprintf out "    final-states: ~a~%"
-	     (dfa-final-states x))))
+	     (dfa-final-states x))
+    (fprintf out "    alphabet: ~a~%" (dfa-alphabet x)))
+  #t)
 
 ;; Look for a list list (curr-state symbol _ ) in transitions
 ;; the third element of this list will be the next state(s)
@@ -219,25 +221,35 @@
 	   new-transitions))))
 
 (define (dfa-minimize! dfa1)
-  (dfa-remove-unreachable-states! dfa1)
-  (%dfa-minimize! dfa1))
+  (print "Minmize")
+  ;(dfa-remove-unreachable-states! dfa1)
+  ;(%dfa-minimize! dfa1)
+)
 
 ;; Minimise a dfa
 ;; Find the states that are equivalent and merge them
 (define (%dfa-minimize! dfa1)
-  (let loop0 ((states1 (dfa-states dfa1)))
-    (if (not (null? states1))
-	(let loop1 ((states2 (dfa-states dfa1)))
-	  (if (not (null? states2))
-	      (let ((state1 (car states1))
-		    (state2 (car states2)))
-		(if (and (not (equal? state1 state2))
-			 (equivalent-states? dfa1 state1 state2))
-		    (rename-states! dfa1 state2 state1))
-		(loop1 (cdr states2))))
-	  (loop0 (cdr states1))))))
-
-
+  (print (length (dfa-states dfa1)))
+  (define changed #f)
+  (let loop1 ((states1 (dfa-states dfa1)))
+    (cond ((not (null? states1))
+	  (let loop2 ((states2 (dfa-states dfa1)))
+	    (print "     " (length states2))
+	    (cond ((not (null? states2))
+		   (let ((state1 (car states1))
+			 (state2 (car states2)))
+		     ;;(print "state1 " state1)
+		     ;;(print "state2 " state2)
+		     (cond ((and (not (equal? state1 state2))
+			      (equivalent-states? dfa1 state1 state2))
+			    (rename-states! dfa1 state2 state1)
+			    (set! changed #t)))
+		     (loop2 (cdr states2))))))
+	  (loop1 (cdr states1)))
+	  (changed 
+	   ;; some states have been merged, it may be possible 
+	   ;; to merge more on another pass
+	   (%dfa-minimize! dfa1)))))
 
 ;; Returns true if q1 and q2 are equivalent states.
 ;; Two states in a dfa are equivalent if
@@ -297,27 +309,21 @@
 
 ;; Returns all the unreachable states in the dfa
 (define (%unreachable-states dfaA)
-  (let loop ((states (dfa-states dfaA))
-	      (unreachable-states (list)))
-    (if (not (null? states))
-	(if (%unreachable-state? dfaA (car states))
-	    (loop (cdr states) (cons (car states)
-				     unreachable-states))
-	    (loop (cdr states) unreachable-states))
-	unreachable-states)))
+  (find-if-all (lambda (state)
+		 (%unreachable-state? dfaA state))
+	       (dfa-states dfaA)))
 
 (define (%unreachable-state? dfaA state)
-  (not
-   (find-if
-    ;; states are reachable if..
-    (lambda (transition)
-      ;; the start state is always reachable
-      (or (equal? state (dfa-start-state dfaA))
-	  ;; this state is the destination of some transition
-	  (and (equal? state (third transition))
-	       ;; where it is not also the source 
-	       (not (equal? state (first transition))))))
-    (dfa-transition-list dfaA))))
+  ;; the start state is always reachable
+  (cond ((equal? state (dfa-start-state dfaA)) #f)
+	(else (not (find-if
+		    ;; states are reachable if..
+		    (lambda (transition)
+		      ;; this state is the destination of some transition
+		      (and (equal? state (third transition))
+			   ;; where it is not also the source 
+			   (not (equal? state (first transition)))))
+		    (dfa-transition-list dfaA))))))
 
 ;; This is a hack because we don't bother storing the states
 (define (dfa-states dfa1)

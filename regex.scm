@@ -88,7 +88,7 @@
 	      (?sym (nfa-for-one-symbol sym))))
 
 (define (nfa-concat nfaA nfaB . rest)
-  (print nfaA nfaB rest)
+  ;(print nfaA nfaB rest)
   ;(print-nfa (car rest))
   (let loop ((result (%nfa-concat nfaA nfaB))
 	     (rest rest))
@@ -124,16 +124,17 @@
   (let* ((q0     (gensym "q"))
 	 (qfinal (gensym "q"))
 	 (startA (nfa-start-state nfaA))
-	 ;; this only works for nfa which 
-	 ;; only have one final state,
-	 ;; which includes all the ones 
-	 ;; produced from a regex
-	 (endA   (car (nfa-final-states nfaA)))
-	 (trans (append (list (list q0 'epsilon qfinal)
-			      (list q0 'epsilon startA)
-			      (list endA 'epsilon startA)
-			      (list endA 'epsilon qfinal))
-			(nfa-transition-list nfaA))))
+	 (finalA  (nfa-final-states nfaA))
+	 (trans (append 
+		 (map (lambda (endA)
+			(list endA 'epsilon startA))
+		      finalA)
+		 (map (lambda (endA)
+			(list endA 'epsilon qfinal))
+		      finalA)
+		 (list (list q0 'epsilon qfinal)
+		       (list q0 'epsilon startA))
+		 (nfa-transition-list nfaA))))
     (nfa-rename-states
      (nfa
       (nfa-alphabet nfaA)
@@ -149,15 +150,17 @@
 	 (qfinal (gensym "q"))
 	 (startA (nfa-start-state nfaA))
 	 (startB (nfa-start-state nfaB))
-	 (endA (car (nfa-final-states nfaA))) 
-	 (endB (car (nfa-final-states nfaB)))
-	 ;; This is only works for nfas which have one final
-	 ;; state, which includes all the ones produced from a regex
+	 (finalA (nfa-final-states nfaA))
+	 (finalB (nfa-final-states nfaB))
 	 (trans (append 
+		 (map (lambda (endA)
+			(list endA 'epsilon qfinal))
+		      finalA)
+		 (map (lambda (endB)
+			(list endB 'epsilon qfinal))
+		      finalB)
 		 (list (list q0 'epsilon startA)
-		       (list q0 'epsilon startB)
-		       (list endA 'epsilon qfinal)
-		       (list endB 'epsilon qfinal))
+		       (list q0 'epsilon startB))
 		 (nfa-transition-list nfaA) (nfa-transition-list nfaB))))
     (nfa-rename-states
      (nfa (union  (nfa-alphabet nfaA) (nfa-alphabet nfaB))
