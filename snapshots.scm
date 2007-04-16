@@ -1,3 +1,4 @@
+;;rename this file to fst
 (module 
  snapshots
  (include "nfa.sch")

@@ -16,7 +16,7 @@
 (define *default-tense-relations* 
   '(equal overlaps overlapped-by starts started-by ends ended-by during contains))
 
-(define *primitive-events* '(A))
+(define *primitive-events* '(A B C))
 (define *inverses-of-primitive-events* '(notA))
 (define *interval-fluents '())
 (define *alphabet* (build-alphabet *primitive-events*))
@@ -99,9 +99,9 @@
 (define (ev-not ev1)
   (nfa-alphabet-set! ev1 (alphabet))
   (let* ((dfa1 (nfa->dfa ev1))
-	 (d (view (graph dfa1)))
+	 ;(d (view (graph dfa1)))
 	 (closure (weak-subsumptive-closure dfa1))
-	 (d1 (view (graph closure)))
+	 ;(d1 (view (graph closure)))
 	 (L (dfa-consistent-universal-language))
 	 (not-ev1 (dfa-less L closure)))
     (dfa->nfa not-ev1)))
@@ -142,7 +142,14 @@
       (print "*************************")
       ;(print (maxf length (nfa-alphabet nfa1)))
       ;(map print (nfa-alphabet nfa1))
+      ;(view (graph nfa1))
       (view (graph dfa1))
-      (loop))))
+      (let* ((model (read))
+	     (result (run-dfa dfa1 model)))
+	(if (car result)
+	    (print "Accepted")
+	    (print "Not accepted"))
+	(print "Input string remaining " (cdr result))
+	(loop)))))
     
 	    
