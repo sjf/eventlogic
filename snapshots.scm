@@ -14,7 +14,9 @@
 	 (nfa-empty)
 	 (union-fluent-alphabets a1 a2)
 	 (sort-fluents l)
-	 (superposition a b)))
+	 (superposition a b)
+	 (subsumptive-closure a)
+	 (weak-subsumptive-closure a)))
 
 
 (define snapshot-lexer
@@ -97,6 +99,14 @@
 ;; the same as L&E*
 (define (subsumptive-closure dfaA)
   (superposition dfaA (dfa-universal (dfa-alphabet dfaA))))
+
+(define (weak-subsumptive-closure dfaA)
+  ;; The strings which subsume L but can be of any length
+  ;; []*.L.[]* & E*
+  (let* ((nfa1 (dfa->nfa dfaA))
+	 (weak-L (nfa-concat (nfa-star (nfa-empty)) nfa1 (nfa-star (nfa-empty))))
+	 (weak-dfa (nfa->dfa weak-L)))
+    (subsumptive-closure weak-dfa)))
 
 (define (constraint dfaA dfaB)
   ;; A and B need to have the same alphabet

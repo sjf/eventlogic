@@ -24,7 +24,8 @@
   (starts a b)
   (started-by a b)
   (ends a b)
-  (ended-by a b)))
+  (ended-by a b)
+  (weak-overlaps a b)))
 
 ;; the relation procedures (unquoted) plus their names
 (define relations 
@@ -113,6 +114,29 @@
   (dfa->nfa (superposition (nfa->dfa (nfa-concat (nfa-empty-plus) nfa1)) (nfa->dfa nfa2))))
 (define (ended-by nfa1 nfa2) (ends nfa2 nfa1))
 
+
+;; Any part of L1 and L2 overlap.
+;; L1 does not have to appear before L2.
+;; This is same as (equal or starts or
+;; overlaps or during or during) as 
+;; well as their inverses.
+(define (weak-overlaps nfa1 nfa2)
+  (nfa-or (%weak-overlaps nfa1 nfa2)
+	   (%weak-overlaps nfa2 nfa1)))
+
+(define (%weak-overlaps nfa1 nfa2)
+  ;;   L1.[]*  
+  ;; & []*.L2   - L1.[]*.L2
+  (let* ((d (print 1))
+	 (dfa1 (nfa->dfa (nfa-concat nfa1 (nfa-star (nfa-empty)))))
+	 (d1 (print 2))
+	 (dfa2 (nfa->dfa (nfa-concat (nfa-star (nfa-empty)) nfa2)))
+	 (d2 (print 3))
+	 (not-overlapped (nfa->dfa (nfa-concat nfa1 (nfa-star (nfa-empty)) nfa2)))
+	 (d3 (print 4))
+	 (superpos (superposition dfa1 dfa2))
+	 (result (dfa-less superpos not-overlapped)))
+    (dfa->nfa result)))
 
 (define (run-all-relations e1 e2 str)
   (run-relations e1 e2 str relations))

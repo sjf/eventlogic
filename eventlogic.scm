@@ -16,7 +16,9 @@
 (define *default-tense-relations* 
   '(equal overlaps overlapped-by starts started-by ends ended-by during contains))
 
-(define *primitive-events* '("A" "B"))
+(define *primitive-events* '(A))
+(define *inverses-of-primitive-events* '(notA))
+(define *interval-fluents '())
 (define *alphabet* (build-alphabet *primitive-events*))
 
 (define (add-fluents! fluents)
@@ -30,8 +32,6 @@
   (map sort-fluents
        (powerset primitive-events)))
 	       
-
-
 (define (ev-primitive p)
   ;; Primitive event types are liquid/homogenous
   ;; [p]+
@@ -62,10 +62,10 @@
 
 (define (tense-interval)
   (let* ((interval (symbol->string (gensym "i")))
-	 (beg ;(string->symbol
-	       (string-append "begin_" interval))
-	 (end ;(string->symbol
-	       (string-append "end_"  interval))
+	 (beg (string->symbol
+	       (string-append "begin_" interval)))
+	 (end (string->symbol
+	       (string-append "end_"  interval)))
 	 (int-nfa (nfa-concat
 		   (nfa-for-one-symbol (list beg))
 		   (nfa-star (nfa-empty))
@@ -74,6 +74,11 @@
     (print "adding events " beg " " end)
     (nfa-alphabet-set! int-nfa (alphabet))
     int-nfa))
+
+(define (ev-default-tense ev1)
+  (let ((interval (tense-interval)))
+    (nfa-alphabet-set! ev1 (alphabet))
+    (weak-overlaps ev1 interval)))
 
 (define (ev-tense ev1 relations)
   (print "tense " relations)
@@ -93,8 +98,13 @@
 	 
 (define (ev-not ev1)
   (nfa-alphabet-set! ev1 (alphabet))
-  (let ((dfa-not-ev1 (dfa-less (nfa->dfa ev1) (dfa-consistent-universal-language))))
-    (dfa->nfa dfa-not-ev1)))
+  (let* ((dfa1 (nfa->dfa ev1))
+	 (d (view (graph dfa1)))
+	 (closure (weak-subsumptive-closure dfa1))
+	 (d1 (view (graph closure)))
+	 (L (dfa-consistent-universal-language))
+	 (not-ev1 (dfa-less L closure)))
+    (dfa->nfa not-ev1)))
 
 (define (event-formula->nfa formula)
   (match-case formula
@@ -112,8 +122,7 @@
 		       (event-formula->nfa B)
 		       R))
 	      ((tense ?A)
-	       (ev-tense (event-formula->nfa A)
-			 *default-tense-relations*))
+	       (ev-default-tense (event-formula->nfa A)))
 	      ((tense ?A ?R)
 	       (ev-tense (event-formula->nfa A)
 			 R))
