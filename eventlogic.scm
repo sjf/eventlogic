@@ -211,10 +211,6 @@
 ;;   (view (graph (dfa-complete-constraints *primitive-events*
 ;; 					 *inverses*)))
 ;;  (view (graph (dfa-consistent-universal-language)))
-  (view (graph (superposition
-		(nfa->dfa (nfa-concat (nfa-for-one-symbol (list 'a))
-				      (nfa-for-one-symbol (list 'b))))
-		(nfa->dfa (nfa-for-one-symbol (list 'a))))))
   (let loop ()
     (display "> ")
     (let ((s (read)))
