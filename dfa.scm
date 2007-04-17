@@ -14,12 +14,19 @@
     (dfa-universal alphabet)
     (dfa-complement dfaA)
     (dfa-complete dfaA)
+    (dfa-complete! dfaA)
     (dfa-intersection dfaA dfaB)
     (dfa-less dfaA dfaB)
     (dfa-states dfaA)
     (dfa-minimize! dfaA)
+    ;; Yes this is silly, but sometimes minimize is disabled
+    ;; This forces it to be done
+    (dfa-really-minimize! dfaA)
     (dfa-remove-unreachable-states! dfaA)
+    (dfa-remove-never-accepting-states! dfaA)
     (dfa-rename-states dfaA)
+    (dfa-for-one-symbol dfaA alphabet)
+    (dfa-empty-language alphabet)
     test-dfa
     test-dfa1))
     
@@ -94,11 +101,11 @@
 ;; in the language.
 ;; This will add in the necessary extra transitions, which will go
 ;; to a new sink state
-(define (dfa-complete dfaA)
+(define (%complete-transitions dfaA)
   (define transitions (dfa-transition-list dfaA))
   (define sink-state (gensym "sink"))
   ;; Check if is complete beforehand
-  (cond ((is-complete? dfaA) dfaA)
+  (cond ((is-complete? dfaA) transitions)
 	(else (map (lambda (state)
 		     (map (lambda (symbol) 
 			    (if (equal? (dfa-trans dfaA state symbol) #f)
@@ -108,11 +115,20 @@
 					    transitions))))
 			  (dfa-alphabet dfaA)))
 		     (cons sink-state (dfa-states dfaA)))
-	      (dfa-rename-states
-	       (dfa (dfa-start-state dfaA)
-		    transitions
-		    (dfa-final-states dfaA)
-		    (dfa-alphabet dfaA))))))
+	      transitions)))
+
+(define (dfa-complete! dfaA)
+  (let ((trans (%complete-transitions dfaA)))
+    (dfa-transition-list-set! dfaA trans)))
+					  
+
+(define (dfa-complete dfaA)
+  (let ((trans (%complete-transitions dfaA)))
+    (dfa-rename-states
+     (dfa (dfa-start-state dfaA)
+	  trans
+	  (dfa-final-states dfaA)
+	  (dfa-alphabet dfaA)))))
     
 (define (is-complete? dfaA)
   (let loop ((states (dfa-states dfaA))
@@ -122,20 +138,7 @@
 	  ((equal? #f (dfa-trans dfaA (car states) (car alphabet))) #f)
 	  (else (loop states (cdr alphabet))))))
 
-;; Returns the dfa for the universal language, eg. E*
-(define (dfa-universal alphabet)
-  (let* ((q0 (gensym "q"))
-	 (trans (map 
-		 (lambda (sym)
-		   (list q0 sym q0))
-		 alphabet)))
-    (dfa 
-     q0
-     trans
-     (list q0)
-     alphabet)))
-	 
-
+	
 (define (dfa-complement dfaA)
   (let* ((cdfa (dfa-complete dfaA))
 	 (states (dfa-states cdfa))
@@ -225,20 +228,26 @@
 	   new-transitions))))
 
 (define (dfa-minimize! dfa1)
-  (print "Minmize")
+  #t
   ;(dfa-remove-unreachable-states! dfa1)
   ;(%dfa-minimize! dfa1)
 )
 
+(define (dfa-really-minimize! dfa1)
+  (dfa-remove-unreachable-states! dfa1)
+  (%dfa-minimize! dfa1))
+ 
+
 ;; Minimise a dfa
 ;; Find the states that are equivalent and merge them
 (define (%dfa-minimize! dfa1)
-  (print (length (dfa-states dfa1)))
+  (print "Minimize")
+  ;(print (length (dfa-states dfa1)))
   (define changed #f)
   (let loop1 ((states1 (dfa-states dfa1)))
     (cond ((not (null? states1))
 	  (let loop2 ((states2 (dfa-states dfa1)))
-	    (print "     " (length states2))
+	    ;(print "     " (length states2))
 	    (cond ((not (null? states2))
 		   (let ((state1 (car states1))
 			 (state2 (car states2)))
@@ -261,9 +270,10 @@
 ;; next state. They must also both be either final or not
 ;; final.
 (define (equivalent-states? dfa1 q1 q2)
-  (if (not (equal? (member q1 (dfa-final-states dfa1))
-		   (member q2 (dfa-final-states dfa1))))
+  (if (not (equal? (member? q1 (dfa-final-states dfa1))
+		   (member? q2 (dfa-final-states dfa1))))
       #f
+
       (let loop ((symbols (dfa-alphabet dfa1)))
 	(cond ((null? symbols)
 	       #t)
@@ -362,7 +372,68 @@
        new-trans
        new-final
        (dfa-alphabet dfa1)))))	 
+
+(define (dfa-remove-never-accepting-states! dfa1)
+  (let loop  ((accepting (dfa-final-states dfa1)))
+    ;; remove the accepting states
+    ;; new accepting states are the states which can go to the 
+    ;; accepting states
+    (let* ((remaining-states (list-less (dfa-states dfa1) accepting))
+	   (can-accept
+	    (find-if-all
+	     (lambda (state)
+	       ;; they accept if there is a transition from them to an
+	       ;; accepting state
+	       (find-if (lambda (trans)
+			  (and (equal? (first trans) state)
+			       (member (third trans)
+				       accepting)))
+			(dfa-transition-list dfa1)))
+	     remaining-states)))
+	   (cond ((not (null? can-accept))
+		  (loop (append accepting can-accept)))
+		 (else
+		  (let* ((non-accept (list-less (dfa-states dfa1) accepting))
+			 (new-trans (list-remove-if 
+				     (lambda (trans)
+				       (or (member (first trans) non-accept)
+					   (member (third trans) non-accept)))
+				     (dfa-transition-list dfa1))))
+		    (print "Will never accept " non-accept)
+		    (dfa-transition-list-set! dfa1 new-trans)))))))
+		  
+
+;; Returns the dfa for the universal language, eg. E*
+(define (dfa-universal alphabet)
+  (let* ((q0 (gensym "q"))
+	 (trans (map 
+		 (lambda (sym)
+		   (list q0 sym q0))
+		 alphabet)))
+    (dfa 
+     q0
+     trans
+     (list q0)
+     alphabet)))
+	 
+(define (dfa-for-one-symbol sym alphabet)
+  (let ((start (gensym "q"))
+	(final (gensym "q")))
+    (dfa start
+	 (list (list start sym final))
+	 (list final)
+	 alphabet)))
+
 		    
+(define (dfa-empty-language alphabet)
+  (let ((start (gensym "q")))
+    (dfa 
+     start
+     (map (lambda (a)
+		  (list start a start))
+		alphabet)
+     (list)
+     alphabet)))
   
 (define test-dfa 
   (dfa

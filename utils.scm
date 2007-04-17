@@ -4,6 +4,7 @@
     (first l)
     (second l)
     (third l)
+    (member? i l)
     (compose f1 f2)
     (reduce f i l)
     (maxf f l)
@@ -35,6 +36,13 @@
   (cadr l))
 (define (third l)
   (caddr l))
+
+;; Always returns a boolean
+;; member only returns a boolean for false
+(define (member? i l)
+  (if (member i l)
+      #t
+      #f))
 
 (define (compose f1 f2)
   (lambda (x)

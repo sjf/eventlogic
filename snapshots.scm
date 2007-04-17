@@ -16,6 +16,7 @@
 	 (union-fluent-alphabets a1 a2)
 	 (sort-fluents l)
 	 (superposition a b)
+	 (constraint a b)
 	 (subsumptive-closure a)
 	 (weak-subsumptive-closure a)))
 
@@ -128,9 +129,6 @@
     ;(view (graph temp))
     ;(view (graph result))
     result))	 
- ;   (map (lambda (d) (write "*") (read) (view (graph d)))
-;	 (list s-closure-A s-closure-B s-closure-B-inv intersec temp))
-
 
 ;; the empty snapshot: []
 (define empty-snapshot (list))

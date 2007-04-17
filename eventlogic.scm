@@ -16,21 +16,90 @@
 (define *default-tense-relations* 
   '(equal overlaps overlapped-by starts started-by ends ended-by during contains))
 
-(define *primitive-events* '(A B C))
-(define *inverses-of-primitive-events* '(notA))
-(define *interval-fluents '())
-(define *alphabet* (build-alphabet *primitive-events*))
+(define *primitive-events* '(A B))
+(define *inverses* '(notA notB))
+(define *intervals* '())
 
-(define (add-fluents! fluents)
-  (set! *primitive-events* (append *primitive-events* fluents))
-  (set! *alphabet* (build-alphabet *primitive-events*)))
+(define (add-interval-fluents! fluents)
+  (set! *intervals* (append fluents *intervals*))
+  (set! *alphabet* (build-alphabet)))
+
+(define (build-alphabet)
+  (let ((fluents (append *primitive-events*
+			 *inverses*
+			 *intervals*)))
+  (map sort-fluents
+       (powerset fluents))))
+
+(define *alphabet* (build-alphabet))
 (define (alphabet)
   *alphabet*)
 
-(define (build-alphabet primitive-events)
-;  (powerset primitive-events))
-  (map sort-fluents
-       (powerset primitive-events)))
+(define (dfa-negation-constraints events inverses)
+  ;; [phi,not_phi] => {}
+  (let ((alpha (alphabet)))
+
+    ;; not s1 and s2
+    (define (inv-constraint sym sym-inv)
+      ;(print alpha)
+      (let ((dfa1 (dfa-for-one-symbol (list sym sym-inv) alpha))
+	    (dfa2 (dfa-empty-language alpha)))
+	(constraint dfa1 dfa2)))
+
+    (let loop ((dfa1 (inv-constraint (car events)
+				     (car inverses)))
+	       (events (cdr events))
+	       (inverses (cdr inverses)))
+;;       (view (graph dfa1))
+;;       (read)
+       (dfa-remove-never-accepting-states! dfa1)
+;;       (read)
+;      (view (graph dfa1))
+      (cond ((not (null? events))
+	     (loop (dfa-intersection
+		    dfa1
+		    (inv-constraint
+		    (car events)
+		    (car inverses)))
+		   (cdr events)
+		   (cdr inverses)))
+	    (else 
+	     ;(view (graph dfa1))
+	     dfa1)))))
+
+(define (dfa-complete-constraints events inverses)
+  ;; [] => [phi] or [not_phi]
+  (define (comp-constraint sym sym-inv alpha)
+    (let* ((dfa1 (dfa-for-one-symbol empty-snapshot alpha))
+	   (d-sym (dfa-for-one-symbol (list sym) alpha))
+	   (d-sym-inv (dfa-for-one-symbol (list sym-inv) alpha))
+	   (nfa-or (nfa-or (dfa->nfa d-sym)
+				     (dfa->nfa d-sym-inv)))
+	   (dfa-or (nfa->dfa nfa-or)))
+      (constraint dfa1 dfa-or)))
+  (let ((alpha (alphabet)))
+    (let loop ((dfa1 (comp-constraint (car events) (car inverses) alpha))
+	       (events (cdr events))
+	       (inverses (cdr inverses)))
+      (dfa-remove-never-accepting-states! dfa1)
+      (cond ((not (null? events))
+	     (loop (dfa-intersection 
+		    dfa1
+		    (comp-constraint
+		     (car events)
+		     (car inverses)
+		     alpha))
+		   (cdr events)
+		   (cdr inverses)))
+	    (else
+	     (dfa-really-minimize! dfa1)
+	     dfa1)))))
+
+(define (ev-subsumption nfa1)
+  (let* ((dfa1 (nfa->dfa nfa1))
+	(closure (subsumptive-closure dfa1))
+	(intersec (dfa-intersection closure (dfa-consistent-universal-language))))
+    (dfa->nfa intersec)))
 	       
 (define (ev-primitive p)
   ;; Primitive event types are liquid/homogenous
@@ -40,7 +109,6 @@
   (let ((p-nfa (nfa-plus (nfa-for-one-symbol (list p)))))
     (nfa-alphabet-set! p-nfa (alphabet))
     p-nfa))
-	   
 
 (define (ev-and ev1 ev2 relations)
   ;; (and A B relations)
@@ -52,7 +120,7 @@
 	(loop (nfa-or nfa1
 		      (allen (car relations) ev1 ev2))
 	      (cdr relations))
-	nfa1)))
+	 nfa1)))
 
 (define (ev-or ev1 ev2)
   ;; (or A B)
@@ -70,7 +138,7 @@
 		   (nfa-for-one-symbol (list beg))
 		   (nfa-star (nfa-empty))
 		   (nfa-for-one-symbol (list end)))))
-    (add-fluents! (list beg end))
+    (add-interval-fluents! (list beg end))
     (print "adding events " beg " " end)
     (nfa-alphabet-set! int-nfa (alphabet))
     int-nfa))
@@ -92,17 +160,23 @@
 	  (ev-tense nfa1 (cdr relations))
 	  nfa1))))
 
+
+
 (define (dfa-consistent-universal-language)
-  ;; TODO
-  (dfa-universal (alphabet)))
+  (dfa-intersection 
+   ;; [] => [phi] or [not_phi]
+   (dfa-complete-constraints *primitive-events* *inverses*)
+   ;; [phi,not_phi] => {}
+   (dfa-negation-constraints *primitive-events* *inverses*)))
+				   
 	 
 (define (ev-not ev1)
   (nfa-alphabet-set! ev1 (alphabet))
   (let* ((dfa1 (nfa->dfa ev1))
-	 ;(d (view (graph dfa1)))
+	 ;; all the strings that contain dfa1 anywhere in them
 	 (closure (weak-subsumptive-closure dfa1))
-	 ;(d1 (view (graph closure)))
 	 (L (dfa-consistent-universal-language))
+	 ;; remove all the strings that subsume ev1 
 	 (not-ev1 (dfa-less L closure)))
     (dfa->nfa not-ev1)))
 
@@ -132,24 +206,35 @@
 (define (scene-desc->list scene-desc)
   '(scene-list))
 
-
+(define *complete?* #f)
 (define (eventlogic-main args)
+;;   (view (graph (dfa-complete-constraints *primitive-events*
+;; 					 *inverses*)))
+;;  (view (graph (dfa-consistent-universal-language)))
   (let loop ()
     (display "> ")
-    (let* ((nfa1 (event-formula->nfa (read)))
-	  (dfa1 (nfa->dfa nfa1)))
-      (print-nfa nfa1)
-      (print "*************************")
-      ;(print (maxf length (nfa-alphabet nfa1)))
-      ;(map print (nfa-alphabet nfa1))
-      ;(view (graph nfa1))
-      (view (graph dfa1))
-      (let* ((model (read))
-	     (result (run-dfa dfa1 model)))
-	(if (car result)
-	    (print "Accepted")
-	    (print "Not accepted"))
-	(print "Input string remaining " (cdr result))
-	(loop)))))
+    (let ((s (read)))
+      (cond ((equal? s 'complete) (set! *complete?* #t) (print "Completing all dfas")(loop))
+	    ((equal? s 'uncomplete) (set! *complete?* #f) (print "Not completing all dfas") (loop))
+	    (else
+	     (let* ((nfa1 (event-formula->nfa s))
+		    (dfa1 (nfa->dfa nfa1)))
+	       (print-nfa nfa1)
+	       (print "*************************")
+					;(print (maxf length (nfa-alphabet nfa1)))
+					;(map print (nfa-alphabet nfa1))
+					;(view (graph nfa1))
+	       (dfa-remove-never-accepting-states! dfa1)
+	       (dfa-really-minimize! dfa1)
+	       (if *complete?* (dfa-complete! dfa1))
+	       (view (graph dfa1))
+	       (display "Model > ")
+	       (let* ((model (read))
+		      (result (run-dfa dfa1 model)))
+		 (if (car result)
+		     (print "Accepted")
+		     (print "Not accepted"))
+		 (print "Input string remaining " (cdr result))
+		 (loop))))))))
     
 	    
