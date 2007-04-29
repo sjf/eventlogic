@@ -15,6 +15,7 @@
     (list-less l1 l2)
     (nub l)
     (flatten l)
+    (flatten-deep l)
     (powerset l)
     (cross-product l1 l2)
     (union a b)
@@ -137,6 +138,11 @@
 	 (append (car l) (flatten (cdr l))))
 	(else 
 	 (cons (car l) (flatten (cdr l))))))
+
+(define (flatten-deep l)
+  (cond ((null? l) '())
+	((list? l) (append (flatten-deep (car l)) (flatten-deep (cdr l))))
+	(else (list l))))
 
 ;; Return the power set of l, eg. all the subsets of l
 (define (powerset l)

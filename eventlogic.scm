@@ -16,9 +16,10 @@
 (define *default-tense-relations* 
   '(equal overlaps overlapped-by starts started-by ends ended-by during contains))
 
-(define *primitive-events* '(A B))
-(define *inverses* '(notA notB))
+(define *primitive-events* '(A B C))
+(define *inverses* '(notA notB notC))
 (define *intervals* '())
+(define *internals* '(and not or tense equal before after meets met-by overlaps operlapped-by contains during starts started-by ends ended-by weak-overlaps))
 
 (define (add-interval-fluents! fluents)
   (set! *intervals* (append fluents *intervals*))
@@ -180,18 +181,19 @@
 	 (not-ev1 (dfa-less L closure)))
     (dfa->nfa not-ev1)))
 
+
 (define (event-formula->nfa formula)
   (match-case formula
-	      ((not_ ?A)
+	      (((kwote not) ?A)
 	       (ev-not (event-formula->nfa A)))
-	      ((or_ ?A ?B)
+	      (((kwote or) ?A ?B)
 	       (ev-or (event-formula->nfa A)
 		      (event-formula->nfa B)))
-	      ((and_ ?A ?B)
+	      (((kwote and) ?A ?B)
 	       (ev-and (event-formula->nfa A) 
 		       (event-formula->nfa B)
 		       *default-and-relations*))
-	      ((and_ ?A ?B ?R)
+	      (((kwote and) ?A ?B ?R)
 	       (ev-and (event-formula->nfa A)
 		       (event-formula->nfa B)
 		       R))
@@ -206,6 +208,23 @@
 (define (scene-desc->list scene-desc)
   '(scene-list))
 
+(define (parse-and-setup-alphabet! s)
+  (set! *primitive-events* (parse-alphabet s))
+  (set! *inverses* (negate-alphabet *primitive-events*))
+  (set! *alphabet* (build-alphabet)))
+
+(define (negate-alphabet a)
+  (map (lambda (x) 
+	 (string->symbol (string-append "not" (symbol->string x))))
+       a))
+
+(define (parse-alphabet s)
+  (define (pa e)
+    (if (member? e *internals*)
+	'()
+	e))
+  (flatten-deep (map pa (flatten-deep s))))
+
 (define *complete?* #f)
 (define (eventlogic-main args)
 ;;   (view (graph (dfa-complete-constraints *primitive-events*
@@ -217,6 +236,7 @@
       (cond ((equal? s 'complete) (set! *complete?* #t) (print "Completing all dfas")(loop))
 	    ((equal? s 'uncomplete) (set! *complete?* #f) (print "Not completing all dfas") (loop))
 	    (else
+	     (parse-and-setup-alphabet! s)
 	     (let* ((nfa1 (event-formula->nfa s))
 		    (dfa1 (nfa->dfa nfa1)))
 	       (print-nfa nfa1)

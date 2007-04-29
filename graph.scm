@@ -16,6 +16,7 @@
 	 (graph-to-file state-machine file)))
 
 (define *image-viewer* "eog")
+(define *dot* "dot")
 
 (define (graph state-machine)
   (cond ((nfa? state-machine)
@@ -98,13 +99,13 @@
 ;; using dot. Display the graph using eog.
 (define (view graph)
   (let* ((tempfile (temp-filename))
-	 (proc (run-process "dot" "-Tpng" "-o" tempfile :input :pipe))
+	 (proc (run-process *dot* "-Tpng" "-o" tempfile :input :pipe))
 	 (proc-input (process-input-port proc)))
     (fprint proc-input graph)
     (flush-output-port proc-input)
     (close-output-port proc-input)
     (process-wait proc)
-    (run-process *image-viewer* tempfile)))
+    (run-process *image-viewer* tempfile error: "/dev/null")))
 
 (define (main-graph argv)
   (view (graph test-dfa1))
