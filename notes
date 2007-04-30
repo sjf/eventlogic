@@ -9,3 +9,6 @@ dot -Tps -o out.ps  file.dot
 gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dGraphicsAlphaBits=4 \
    -sDEVICE=png16m -sOutputFile=out.png out.ps
 
+
+NOTES: negation includes in empty string because it is in the universal consistent language.
+

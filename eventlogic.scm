@@ -215,7 +215,7 @@
 
 (define (negate-alphabet a)
   (map (lambda (x) 
-	 (string->symbol (string-append "not" (symbol->string x))))
+	 (string->symbol (string-append "~" (symbol->string x))))
        a))
 
 (define (parse-alphabet s)
@@ -247,7 +247,7 @@
 	       (dfa-remove-never-accepting-states! dfa1)
 	       (dfa-really-minimize! dfa1)
 	       (if *complete?* (dfa-complete! dfa1))
-	       (view (graph dfa1))
+	       (view (graph dfa1 s))
 	       (display "Model > ")
 	       (let* ((model (read))
 		      (result (run-dfa dfa1 model)))

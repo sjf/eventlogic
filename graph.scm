@@ -12,19 +12,34 @@
 	 (utils "utils.scm"))
 	(export 
 	 (view graph)
-	 (graph state-machine)
+	 (graph state-machine . title)
 	 (graph-to-file state-machine file)))
 
 (define *image-viewer* "eog")
 (define *dot* "dot")
 
-(define (graph state-machine)
-  (cond ((nfa? state-machine)
-	 (graph-nfa state-machine))
-	((dfa? state-machine)
-	 (graph-dfa state-machine))
-	(else
-	 (error "graph" "Can only produce a graph for nfa or dfa" state-machine))))
+(define (graph state-machine . title)
+  (let ((gr (cond ((nfa? state-machine)
+		   (graph-nfa state-machine))
+		  ((dfa? state-machine)
+		   (graph-dfa state-machine))
+		  (else
+		   (error "graph" "Can only produce a graph for nfa or dfa" state-machine)))))
+    (if (null? title)
+	gr
+	(append-dot gr "graph[label=\"~a\"]" (car title)))))
+	    
+(define (append-dot gr fmt s)
+  (close-dot (string-append (open-dot gr) (format fmt s))))
+
+(define (close-dot gr)
+  (string-append gr "}"))
+
+(define (open-dot gr)
+  (let ((sc (string-contains gr "}")))
+    (if sc
+	(string-shrink! gr sc)
+	gr)))
 
 (define (graph-to-file state-machine filename)
   (call-with-output-file
@@ -46,6 +61,7 @@
     node[shape=circle style=solid]
     ~a
 }")
+
 (define dot-final-states
   "node[shape=doublecircle style=solid]
     ~a;")
@@ -53,7 +69,7 @@
 (define (string-quote x)
   (format "\"~a\"" x))
 
-(define (graph-dfa dfa)
+(define (graph-dfa dfa . args)
   (let* ((final-states (if (null? (dfa-final-states dfa))
 			   ""
 			   (format dot-final-states
@@ -75,7 +91,7 @@
 	    (string-join transitions ""))))
 
 
-(define (graph-nfa nfa)
+(define (graph-nfa nfa . args)
   (let* ((final-states (if (null? (nfa-final-states nfa))
 			   ""
 			   (format dot-final-states
