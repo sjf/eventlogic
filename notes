@@ -11,4 +11,4 @@ gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dGraphicsAlphaBits=4 \
 
 
 NOTES: negation includes in empty string because it is in the universal consistent language.
-
+CONC/INTRO: Siskind hints at introspection, regular languages/fsm provide a large theoretical framework 
