@@ -19,7 +19,7 @@
 (define *primitive-events* '(A B C))
 (define *inverses* '(notA notB notC))
 (define *intervals* '())
-(define *internals* '(and not or tense equal before after meets met-by overlaps operlapped-by contains during starts started-by ends ended-by weak-overlaps))
+(define *internals* '(and not or tense equal before after meets met-by overlaps overlapped-by contains during starts started-by ends ended-by))
 
 (define (add-interval-fluents! fluents)
   (set! *intervals* (append fluents *intervals*))
@@ -176,7 +176,7 @@
   (let* ((dfa1 (nfa->dfa ev1))
 	 ;; all the strings that contain dfa1 anywhere in them
 	 (closure (weak-subsumptive-closure dfa1))
-	 (L (dfa-consistent-universal-language))
+	 (L (dfa-less (dfa-consistent-universal-language) (dfa-empty-language (alphabet))))
 	 ;; remove all the strings that subsume ev1 
 	 (not-ev1 (dfa-less L closure)))
     (dfa->nfa not-ev1)))

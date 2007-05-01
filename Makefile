@@ -1,7 +1,5 @@
 OPTIONS = -g4 
 #-pg -p2 
-demo: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.o demo.scm
-	bigloo $(OPTIONS) $^ -o $@
 eventlogic: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.o eventlogic.scm
 	bigloo $(OPTIONS) -o $@ $^
 allen-nfa: dfa.o utils.o nfa.o snapshots.o regex.o graph.o allen-nfa.scm 
