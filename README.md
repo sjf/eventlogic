@@ -1,4 +1,4 @@
-temporal_logic
+eventlogic
 ==============
 
 A regular language implementation of Siskind's event logic. Described here: http://sjf.io/Regular_Languages_For_Siskinds_Event_Logic.pdf
